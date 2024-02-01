@@ -7,5 +7,4 @@ class Users(Base):
 
     Id = Column(Integer, primary_key=True)
     UserId = Column(BigInteger, unique=True, nullable=False)
-    transAmount = Column(Integer, default=0)
     Admin = Column(Boolean, default=False)

@@ -10,6 +10,7 @@ class Submissions(Base):
     UserId = Column(Integer, ForeignKey('users.Id'), nullable=ForeignKey)
     AddressId = Column(Integer, ForeignKey('walletAddress.Id'), nullable=ForeignKey)
     Amount = Column(Integer, nullable=False)
-    TypeTrans = Column(String(255), unique=True, nullable=False)
+    TypeTrans = Column(String(255), nullable=False)
     AddressUser = Column(String(255), nullable=False)
+    Status = Column(String(255), default='WAIT')
     DateTime = Column(DateTime, default=datetime.utcnow())

@@ -27,22 +27,30 @@ engine: AsyncEngine = create_async_engine(
 )
 
 
-async def create_base():
+async def create_base() -> None:
+    """
+    Creates tables in the database
+    :return: None
+    """
     async with engine.begin() as connection:
-        logger.debug('Создаем таблицы в Базе Данных')
+        logger.debug('Creating tables in the Database')
         await connection.run_sync(Base.metadata.create_all)
-        logger.info('Успешно создали таблицы для Базы Данных')
+        logger.info('Successfully created tables for the Database')
 
 
 @asynccontextmanager
-async def get_session():
+async def get_session() -> None:
+    """
+    Provides a convenient way to create and manage database
+    :return: None
+    """
     try:
         async with sessionmaker(engine, class_=AsyncSession)() as session:
             yield session
     except Exception as ex:
         await session.rollback()
-        logger.error(f'Ошибка! {ex}')
+        logger.error(f"Indentation error in function '{__name__}': {ex}")
         raise
     finally:
-        logger.debug('Закрыли запрос!')
+        logger.debug('Closed session!')
         await session.close()
