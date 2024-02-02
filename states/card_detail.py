@@ -1,5 +1,5 @@
-from aiogram.filters.state import State, StateType
+from aiogram.filters.state import State, StatesGroup
 
 
-class FSMCardDetails(StateType):
+class FSMCardDetails(StatesGroup):
     requisites = State()

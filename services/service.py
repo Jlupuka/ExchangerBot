@@ -13,7 +13,6 @@ async def load_router(
     """Подключает все роутеры находящиеся в папке handlers(по умолчанию)(работает и с вложенными папками).
 
     Args:
-        logger (Logger): Logging
         handlers_dir (str):  The main folder where the routers are located. Defaults to 'handlers'.
         dp (Dispatcher): module from aiogram
     Returns:
@@ -24,6 +23,7 @@ async def load_router(
                for module in map(lambda item: item.replace('\\', '/'),
                                  glob(join(handlers_dir, '**', '*.py'), recursive=True))
                ]
+    modules.sort()
     for module in modules:
         module_name = import_module(module)
         if hasattr(module_name, 'router'):
@@ -41,7 +41,6 @@ async def load_middlewares(
     Подключает все мидлвари находящиеся в папке middlewares(по умолчанию)(работает и с вложенными папками).
 
     Args:
-        logger (Logger): Logging
         middlewares_dir (str):  The main folder where the routers are located. Defaults to 'middlewares'.
         dp (Dispatcher): module from aiogram
     Returns:
@@ -49,7 +48,7 @@ async def load_middlewares(
     """
     modules = [module.replace("/", ".").replace('.py', '')
                for module in map(lambda item: item.replace('\\', '/'),
-                                 glob(join(middlewares_dir, '**', '*.py')))
+                                 glob(join(middlewares_dir, '*.py')))
                ]
     for module in modules:
         module_name = import_module(module)
@@ -63,7 +62,8 @@ async def load_middlewares(
             # Подключаем middleware к соответствующему хендлеру
             if 'callback' in module:
                 dp.callback_query.middleware(middleware())
+                logger.debug(f'Success add middleware {module} in callback!')
             elif 'message' in module:
                 dp.message.middleware(middleware())
-            logger.debug(f'Success add middleware {module}!')
+                logger.debug(f'Success add middleware {module} in message!')
     logger.info('All middlewares have been loaded.')
