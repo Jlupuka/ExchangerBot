@@ -30,16 +30,16 @@ async def add_application(user_id: int,
             await session.rollback()
 
 
-async def get_all_missons_wait(status: str = 'WAIT', offset: int = 0) -> list[Submissions]:
+async def get_all_missions_wait(status: str = 'WAIT', offset: int = 0) -> list[Submissions]:
     async with get_session() as session:
         if not offset:
             sql = select(Submissions).where(
                 Submissions.Status == status
-                )
+            )
         else:
             sql = select(Submissions).where(
                 Submissions.Status == status
-                ).limit(8).offset(offset * 8)
+            ).limit(8).offset(offset * 8)
         result: ChunkedIteratorResult = await session.execute(sql)
         return result.scalars().all()
 

@@ -3,7 +3,7 @@ from databaseAPI.database import Base
 
 
 class WalletAddress(Base):
-    __tablename__ = 'walletAddress'
+    __tablename__ = 'walletaddress'
 
     Id = Column(Integer, primary_key=True)
     NameNet = Column(String(255), nullable=False)

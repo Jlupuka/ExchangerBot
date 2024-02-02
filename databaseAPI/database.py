@@ -45,7 +45,7 @@ async def get_session() -> None:
     :return: None
     """
     try:
-        async with sessionmaker(engine, class_=AsyncSession)() as session:
+        async with sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as session:
             yield session
     except Exception as ex:
         await session.rollback()

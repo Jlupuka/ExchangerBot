@@ -1,6 +1,6 @@
 from services import logger
 
-from user_commands import select_user
+from databaseAPI.commands.userCommands.user_commands import check_user
 
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,7 @@ async def check_admin(user_id: int) -> bool:
     :param user_id: int
     :return: bool
     """
-    user: Users = await select_user(user_id=user_id)
+    user: Users = await check_user(user_id=user_id)
     return user.Admin
 
 
