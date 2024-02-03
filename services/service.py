@@ -61,9 +61,9 @@ async def load_middlewares(
             middleware = getattr(module_name, middleware_class)
             # Подключаем middleware к соответствующему хендлеру
             if 'callback' in module:
-                dp.callback_query.middleware(middleware())
+                dp.callback_query.outer_middleware(middleware())
                 logger.debug(f'Success add middleware {module} in callback!')
             elif 'message' in module:
-                dp.message.middleware(middleware())
+                dp.message.outer_middleware(middleware())
                 logger.debug(f'Success add middleware {module} in message!')
     logger.info('All middlewares have been loaded.')

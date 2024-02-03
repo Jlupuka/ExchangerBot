@@ -1,9 +1,12 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from typing import Type
+
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from factories.factory import MainCallbackFactory
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from factories.factory import UserCallbackFactory, AdminCallbackFactory
 
 
 async def create_fac_menu(
+        callback_factory: Type[UserCallbackFactory | AdminCallbackFactory],
         width: int = 2,
         back_page: str = None,
         back: bool | str = False,
@@ -14,6 +17,7 @@ async def create_fac_menu(
         **kwargs: str) -> InlineKeyboardMarkup:
     """
     Create fac menu (inline keyboard)
+    :param callback_factory:
     :param width:
     :param back_page:
     :param back:
@@ -30,7 +34,7 @@ async def create_fac_menu(
     kb_builder.row(*[
         InlineKeyboardButton(
             text=text,
-            callback_data=MainCallbackFactory(
+            callback_data=callback_factory(
                 page=data,
                 back_page=back_page
             ).pack()
@@ -40,7 +44,7 @@ async def create_fac_menu(
         if mission_page > 0:
             kb_builder.add(InlineKeyboardButton(
                 text='<<',
-                callback_data=MainCallbackFactory(
+                callback_data=callback_factory(
                     page='missions',
                     back_page=back_page,
                     mission_page=mission_page - 1
@@ -49,7 +53,7 @@ async def create_fac_menu(
         if (mission_page + 1) * 8 <= mission_count:
             kb_builder.add(InlineKeyboardButton(
                 text='>>',
-                callback_data=MainCallbackFactory(
+                callback_data=callback_factory(
                     page='missions',
                     back_page=back_page,
                     mission_page=mission_page + 1
@@ -58,17 +62,17 @@ async def create_fac_menu(
     if back:
         kb_builder.add(InlineKeyboardButton(
             text='Назад',
-            callback_data=MainCallbackFactory(
+            callback_data=callback_factory(
                 page=back,
                 back_page=back_page
             ).pack()
         ))
         if sizes:
-            kb_builder.adjust(*sizes)
+            kb_builder.adjust(*sizes).as_markup(resize_keyboard=True)
         else:
-            kb_builder.adjust(*[1] * len(kwargs), 2)
+            kb_builder.adjust(*[1] * len(kwargs), 2).as_markup(resize_keyboard=True)
     elif sizes:
-        kb_builder.adjust(*sizes)
+        kb_builder.adjust(*sizes).as_markup(resize_keyboard=True)
     else:
-        kb_builder.adjust(*[width] * len(kwargs))
+        kb_builder.adjust(*[width] * len(kwargs)).as_markup(resize_keyboard=True)
     return kb_builder.as_markup()

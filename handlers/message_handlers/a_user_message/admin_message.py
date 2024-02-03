@@ -3,6 +3,7 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from factories.factory import AdminCallbackFactory
 from filters.filters import IsAdmin
 from keyboard.keyboard_factory import create_fac_menu
 
@@ -16,5 +17,8 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         text=botMessages['startMessageAdmin'],
-        reply_markup=await create_fac_menu(sizes=(2, 2), **startCallbackAdmin)
+        reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                           sizes=(2, 2),
+                                           back_page='main',
+                                           **startCallbackAdmin)
     )
