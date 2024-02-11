@@ -62,12 +62,3 @@ class CryptoCheck:
                          f'\033[33m{wallet_address}\033[0m of this '
                          f'\033[35mnetwork=\033[0m\033[33m{currency_from}\033[0m, '
                          f'\033[35mcurrency=\033[0m\033[33m{currency_to}\033[0m is not authentic')
-
-
-async def main():
-    '0xb43375f1BBe0Dfb405A0Cc6364051c3089c52776'  # eth
-    '1KLaHdc617qydFTvcfwsrnBwXMNCaNxkec'  # btc
-    print(await CryptoCheck.get_balance('0x0000000000000000000000000000000000000000', 'ETH', 'USD'))
-
-
-asyncio.run(main())
