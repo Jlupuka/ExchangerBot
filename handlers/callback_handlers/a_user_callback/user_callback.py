@@ -3,7 +3,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceToken
+from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceToken, choiceMethod
 
 from keyboard.keyboard_factory import create_fac_menu
 from factories.factory import UserCallbackFactory
@@ -109,9 +109,9 @@ async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallback
                                                                         **choiceToken))
 
 
-@router.callback_query(UserCallbackFactory.filter(F.page == 'eth'),
+@router.callback_query(UserCallbackFactory.filter(F.page.in_({'eth', 'btc'})),
                        StateFilter(FSMFiatCrypto.crypto_to))
-async def get_crypto(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
+async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.update_data(crypto_to=callback_data.page)
     logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
@@ -121,13 +121,27 @@ async def get_crypto(callback: CallbackQuery, callback_data: UserCallbackFactory
                                                                         back_page='main'))
 
 
-@router.callback_query(UserCallbackFactory.filter(F.page == 'btc'),
-                       StateFilter(FSMFiatCrypto.crypto_to))
-async def get_crypto(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
-    await state.update_data(crypto_to=callback_data.page)
+@router.callback_query(UserCallbackFactory.filter(F.page.in_({'repeat', 'no'})),
+                       StateFilter(FSMFiatCrypto.check_validate))
+async def repeat_get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
                                      reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back=callback_data.back_page,
+                                                                        back='rub-crypto',
                                                                         back_page='main'))
+
+
+@router.callback_query(UserCallbackFactory.filter(F.page == 'yes'), StateFilter(FSMFiatCrypto.check_validate))
+async def choice_method_get_sum(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
+    await state.set_state(FSMFiatCrypto.method)
+    await callback.message.edit_text(text=botMessages['choiceMethod'],
+                                     reply_markup=await create_fac_menu(UserCallbackFactory,
+                                                                        back_page=callback_data.page,
+                                                                        back='main',
+                                                                        sizes=(3, 1),
+                                                                        back_name=botMessages['cancelLexicon'],
+                                                                        **choiceMethod))
+
+# TODO: дальше смысла пользовательскую часть писать нет. надо написать админскую часть,
+#  где можно добавлять и редактировать валюту и ее процент

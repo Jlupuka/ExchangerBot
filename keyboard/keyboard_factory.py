@@ -9,6 +9,7 @@ async def create_fac_menu(
         callback_factory: Type[UserCallbackFactory | AdminCallbackFactory],
         width: int = 2,
         back_page: str = None,
+        back_name: str = 'Назад',
         back: bool | str = False,
         pagination: bool = False,
         mission_page: int = 0,
@@ -16,18 +17,19 @@ async def create_fac_menu(
         sizes: tuple = None,
         **kwargs: str) -> InlineKeyboardMarkup:
     """
-    Create fac menu (inline keyboard)
-    :param callback_factory:
-    :param width:
-    :param back_page:
-    :param back:
-    :param pagination:
-    :param mission_page:
-    :param mission_count:
-    :param sizes:
-    :param kwargs:
-    :return:
-    """
+        Create fac menu (inline keyboard) with specified parameters.
+        :param callback_factory: Callback factory to create callback data.
+        :param width: Number of buttons in a row. Default is 2.
+        :param back_page: Page to return when back button is clicked. Default is None.
+        :param back_name: Text for the back button. Default is 'Назад'.
+        :param back: If True, add a back button to the keyboard. If False, don't add a back button.
+        :param pagination: If True, add pagination buttons to the keyboard.
+        :param mission_page: Current mission page. Default is 0.
+        :param mission_count: Total number of missions. Default is 0.
+        :param sizes: Sizes of the rows in the keyboard. Default is None.
+        :param kwargs: Key-value pairs where keys are page and values are button texts.
+        :return: InlineKeyboardMarkup object with the created keyboard.
+        """
 
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
@@ -61,7 +63,7 @@ async def create_fac_menu(
             ))
     if back:
         kb_builder.add(InlineKeyboardButton(
-            text='Назад',
+            text=back_name,
             callback_data=callback_factory(
                 page=back,
                 back_page=back_page

@@ -4,6 +4,8 @@ from aiogram.filters.state import State, StatesGroup
 class FSMFiatCrypto(StatesGroup):
     crypto_to = State()
     requisites = State()
+    check_validate = State()
+    method = State()
 
 
 class FSMCryptoFiat(StatesGroup):
