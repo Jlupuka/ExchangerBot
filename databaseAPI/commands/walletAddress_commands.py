@@ -1,58 +1,37 @@
 from services import logger
 
-from sqlalchemy import update, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine.result import ChunkedIteratorResult
 
 from databaseAPI.database import get_session
-from databaseAPI.tables.submissionsTable import Submissions
+from databaseAPI.tables.walletAddressTable import WalletAddress
 
 
-async def add_application(user_id: int,
-                          address_id: int,
-                          amount: int,
-                          typetrans: str,
-                          address_user: str) -> None:
+async def count_wallets() -> int:
     async with get_session() as session:
-        submission_object: Submissions = Submissions(
-            UserId=user_id,
-            AddressId=address_id,
-            Amount=amount,
-            TypeTrans=typetrans,
-            AddressUser=address_user
+        sql: str = func.count(WalletAddress.Id)
+        count_chunk: ChunkedIteratorResult = await session.execute(sql)
+        count: int = count if (count := count_chunk.scalar()) else 0
+        logger.info(f'Number of wallets in the database: {count}')
+        return count
+
+
+async def get_all_wallets() -> list:
+    async with get_session() as session:
+        sql: str = select(WalletAddress.NameNet)
+        nets_chunk: ChunkedIteratorResult = await session.execute(sql)
+        return nets_chunk.scalars().all()
+
+
+async def add_wallet(name_net: str, address: str) -> None:
+    async with get_session() as session:
+        wallet_object: WalletAddress = WalletAddress(
+            NameNet=name_net,
+            Address=address
         )
-        session.add(submission_object)
+        session.add(wallet_object)
         try:
-            await session.commit()
-            return None
-        except IntegrityError as IE:
-            logger.error(f"Indentation error in function '{__name__}': {IE}")
-            await session.rollback()
-
-
-async def get_all_missions_wait(status: str = 'WAIT', offset: int = 0) -> list[Submissions]:
-    async with get_session() as session:
-        if not offset:
-            sql = select(Submissions).where(
-                Submissions.Status == status
-            )
-        else:
-            sql = select(Submissions).where(
-                Submissions.Status == status
-            ).limit(8).offset(offset * 8)
-        result: ChunkedIteratorResult = await session.execute(sql)
-        return result.scalars().all()
-
-
-async def update_mission_accepted(submission_id: int, status: str) -> None:
-    async with get_session() as session:
-        sql = update(Submissions).where(
-            Submissions.Id == submission_id
-        ).values(
-            Status=status
-        )
-        try:
-            await session.execute(sql)
             await session.commit()
             return None
         except IntegrityError as IE:
