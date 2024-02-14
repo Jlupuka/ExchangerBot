@@ -32,7 +32,12 @@ botMessages: dict[str: str] = {
 <b><i>💳 Адрес кошелька</i></b> ⟶ <code>{wallet_address}</code>''',
     'cancelLexicon': 'Отменить🔚',
     'choiceMethod': '''⚙️ Выберете удобный способ ввода суммы средств для перевода
-или нажмите <b><i>"Отменить"</i></b> для отмены обмена.'''
+или нажмите <b><i>"Отменить"</i></b> для отмены обмена.''',
+    'settingsText': '''💼 Администраторов в сети: <code>{adminsWork}</code>
+🗃️ Ваш статус работы: <code>{workType}</code>,
+💳 Количество кошельков в базе: <code>{countWallets}</code>
+📇 Количество заявок в состоянии <b><i>WAIT</i></b>: <code>{countMissions}</code>
+'''
 }
 
 startCallbackUser: dict[str: str] = {
@@ -77,6 +82,20 @@ repeatAddress: dict[str: str] = {
 
 choiceMethod: dict[str: str] = {
     'crypto': 'CRYPTO 🪙',
-    'rub': 'RUB ₽',
-    'usd': 'USD $'
+    'rub': 'RUB 🇷🇺₽',
+    'usd': 'USD 🇺🇸$'
+}
+
+settingsMenu: dict[str: str] = {
+    'workType': None,
+    'wallets': 'Кошельки 💼',
+}
+
+workType: dict[bool: str] = {
+    True: "Работаю ✅",
+    False: "Не работаю ❌"
+}
+
+missions: dict[str: str] = {
+    'missions': 'Заявки 📑'
 }
