@@ -13,4 +13,5 @@ class Submissions(Base):
     TypeTrans = Column(String(255), nullable=False)
     AddressUser = Column(String(255), nullable=False)
     Status = Column(String(255), default='WAIT')
+    AdminId = Column(Integer, default=None)
     DateTime = Column(DateTime, default=datetime.utcnow())

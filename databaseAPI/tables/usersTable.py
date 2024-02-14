@@ -8,3 +8,4 @@ class Users(Base):
     Id = Column(Integer, primary_key=True)
     UserId = Column(BigInteger, unique=True, nullable=False)
     Admin = Column(Boolean, default=False)
+    WorkType = Column(Boolean, default=False)
