@@ -35,7 +35,6 @@ async def info_handler(callback: CallbackQuery) -> None:
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'profile'))
 async def profile_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    print(callback_data)
     await callback.message.edit_text(text=botMessages['profileTextUser'],
                                      reply_markup=await create_fac_menu(UserCallbackFactory,
                                                                         back_page=callback_data.page,
@@ -53,7 +52,6 @@ async def statistics_handler(callback: CallbackQuery, callback_data: UserCallbac
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'missions'))
 async def missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    print(callback_data)
     await callback.message.edit_text(text=botMessages['missionsTextUser'],
                                      reply_markup=await create_fac_menu(UserCallbackFactory,
                                                                         back_page=callback_data.page,
