@@ -24,11 +24,12 @@ async def get_all_wallets() -> list:
         return nets_chunk.scalars().all()
 
 
-async def add_wallet(name_net: str, address: str) -> None:
+async def add_wallet(name_net: str, address: str, type_wallet: str) -> None:
     async with get_session() as session:
         wallet_object: WalletAddress = WalletAddress(
             NameNet=name_net,
-            Address=address
+            Address=address,
+            typeWallet=type_wallet
         )
         session.add(wallet_object)
         try:
