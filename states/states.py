@@ -17,3 +17,10 @@ class FSMCryptoCrypto(StatesGroup):
     crypto_from = State()
     crypto_to = State()
     requisites = State()
+
+
+class FSMAddWallet(StatesGroup):
+    crypto_to = State()
+    address = State()
+    type_wallet = State()
+    check_correct = State()
