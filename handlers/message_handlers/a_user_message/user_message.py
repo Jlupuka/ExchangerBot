@@ -4,10 +4,10 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
 from factories.factory import UserCallbackFactory
-from filters.filters import IsEthBtcAddress
+from filters.filters import IsCryptoAddress
 from keyboard.keyboard_factory import create_fac_menu
 
-from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress
+from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon
 from services import logger
 from states.states import FSMFiatCrypto
 
@@ -25,7 +25,7 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     )
 
 
-@router.message(StateFilter(FSMFiatCrypto.requisites), IsEthBtcAddress())
+@router.message(StateFilter(FSMFiatCrypto.requisites), IsCryptoAddress())
 async def add_mission(message: Message, state: FSMContext) -> None:
     await state.update_data(requisites=message.text)
     await state.set_state(FSMFiatCrypto.check_validate)
@@ -46,8 +46,8 @@ async def error_address(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMFiatCrypto.check_validate)
     state_data = await state.get_data()
     logger.debug(state_data)
-    await message.answer(text=botMessages['errorAddress'].format(net=state_data['crypto_to'],
-                                                                 wallet_address=message.text),
+    await message.answer(text=errorLexicon['errorAddress'].format(net=state_data['crypto_to'],
+                                                                  wallet_address=message.text),
                          reply_markup=await create_fac_menu(UserCallbackFactory,
                                                             back='main',
                                                             back_name=botMessages['cancelLexicon'],
