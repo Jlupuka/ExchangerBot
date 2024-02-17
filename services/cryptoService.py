@@ -1,33 +1,25 @@
 import re
-from typing import Coroutine, Any
+from typing import Coroutine, Any, Type
 
 import aiohttp
 
-from CastomExceptions.castomException import NotFoundCryptoToken, BadRequest
+from CastomExceptions.castomException import NotFoundCryptoToken, BadRequest, BadCryptoAddress
 from services import logger
+from services.cardService import CardCheck
+
+# Define the regex patterns for each cryptocurrency
+token_patterns = {
+    'btc': r'1[a-zA-HJ-NP-Z1-9]{25,34}$',
+    'eth': r'0x[a-fA-F0-9]{40}$',
+    'sol': r'^([1-9A-HJ-NP-Za-km-z]{44})$',
+    'doge': r'D[a-zA-Z1-9]{33}$',
+    'tron': r'T[a-zA-Z0-9]{33}$',
+    'xmr': r'[84][0-9AB][1-9A-HJ-NP-Za-km-z]{93}$',
+    'rub': CardCheck.validate_luhn
+}
 
 
 class CryptoCheck:
-    @staticmethod
-    async def is_valid_eth_address(address: str) -> bool:
-        """
-        Checks if the address is an Ethereum crypto wallet
-        :param address: (str) address crypto wallet
-        :return: True | False
-        """
-        pattern = re.compile(r'^0x[a-fA-F0-9]{40}$')
-        return bool(pattern.match(address))
-
-    @staticmethod
-    async def is_valid_btc_address(address: str) -> bool:
-        """
-        Checks if the address is a Bitcoin crypto wallet
-        :param address: (str) address crypto wallet
-        :return: True | False
-        """
-        pattern = re.compile(r'^[13][a-zA-Z0-9]{26,35}$')
-        return bool(pattern.match(address))
-
     @staticmethod
     async def btc(wallet_address: str) -> Coroutine[Any, Any, dict]:
         """
@@ -116,3 +108,21 @@ class CryptoCheck:
                     return commission
                 else:
                     raise BadRequest(f'Bad request: {response.status}. Link: {url}')
+
+    @staticmethod
+    async def validate_crypto_address(crypto: str, address: str) -> tuple[bool, Type[NotFoundCryptoToken]] | tuple[
+                                                                    bool, Type[BadCryptoAddress]] | tuple[bool, None]:
+        """
+        Checks if the token and crypto address are valid
+        :param crypto: (str) crypto token
+        :param address: (str) address wallet
+        :return: Logical expression, in case of error - error class
+        """
+        if crypto.lower() == 'rub':
+            return token_patterns['rub'](address), None
+        if crypto not in token_patterns:
+            return False, NotFoundCryptoToken
+        pattern = token_patterns[crypto]
+        if not re.match(pattern, address):
+            return False, BadCryptoAddress
+        return True, None
