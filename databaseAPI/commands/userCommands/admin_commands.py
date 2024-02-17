@@ -75,6 +75,7 @@ async def update_workType(user_id: int, work_type: bool) -> bool:
             WorkType=not work_type
         )
         try:
+            await session.execute(sql)
             await session.commit()
             return not work_type
         except IntegrityError as IE:
