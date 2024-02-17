@@ -20,20 +20,21 @@ class IsAdmin(BaseFilter):
         return await check_admin(user_id=message.from_user.id)
 
 
-class IsEthBtcAddress(BaseFilter):
+class IsCryptoAddress(BaseFilter):
     async def __call__(self, message: Message, state: FSMContext) -> bool:
         state_data = await state.get_data()
-        match state_data['crypto_to']:
-            case 'btc':
-                btc = await CryptoCheck.is_valid_btc_address(address=message.text)
-                return btc
-            case 'eth':
-                eth = await CryptoCheck.is_valid_eth_address(address=message.text)
-                return eth
-            case _:
-                return False
+        return (await CryptoCheck.validate_crypto_address(crypto=state_data['crypto_to'], address=message.text))[0]
 
 
 class IsNumber(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         return message.text.isdigit()
+
+
+class CheckState(BaseFilter):
+    def __init__(self, pattern: str) -> None:
+        self.pattern = pattern
+
+    async def __call__(self, message: Message, state: FSMContext) -> bool:
+        state_data: dict[str: str] = await state.get_data()
+        return state_data.get(self.pattern, False)
