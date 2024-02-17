@@ -20,3 +20,15 @@ class BadRequest(Exception):
 
     def __str__(self) -> str:
         return self.message
+
+
+class BadCryptoAddress(Exception):
+    """
+    Called if the user has entered an incorrect crypto address
+    """
+
+    def __init__(self, *args: str | None) -> None:
+        self.message = args[0] if args else None
+
+    def __str__(self) -> str:
+        return self.message
