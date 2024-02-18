@@ -1,8 +1,10 @@
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import check_admin
+from databaseAPI.commands.walletAddress_commands import get_all_wallets
+from factories.factory import AdminCallbackFactory
 from services.cryptoService import CryptoCheck
 
 
@@ -38,3 +40,10 @@ class CheckState(BaseFilter):
     async def __call__(self, message: Message, state: FSMContext) -> bool:
         state_data: dict[str: str] = await state.get_data()
         return state_data.get(self.pattern, False)
+
+
+class IsToken(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        token = AdminCallbackFactory.unpack(callback.data).page
+        token_in_base = await get_all_wallets()
+        return token.upper() in token_in_base
