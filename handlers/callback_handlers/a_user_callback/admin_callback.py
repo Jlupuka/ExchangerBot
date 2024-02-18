@@ -1,22 +1,21 @@
 from aiogram import Router
+from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
-from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet
+from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet, get_wallets_data, delete_wallet
 from databaseAPI.commands.submissions_commands import get_all_missions_wait
-from filters.filters import IsAdmin
+from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
-    checkCorrectAddWallet, successfullyMessage
+    checkCorrectAddWallet, successfullyMessage, addressMenu, sureDelete, addressDelete, errorLexicon
 
 from keyboard.keyboard_factory import create_fac_menu
 from factories.factory import AdminCallbackFactory
 
-from magic_filter import F
-
 from services import logger
-from services.wallets_service import get_wallets, get_size_wallet
+from services.wallets_service import get_wallets, get_size_wallet, preprocess_wallets
 from states.states import FSMAddWallet
 
 router: Router = Router()
@@ -72,8 +71,9 @@ async def wallets_handler(callback: CallbackQuery, callback_data: AdminCallbackF
     wallets_menu: dict[str: str] = walletsMenu.copy()
     if wallets_dict:
         wallets_menu = {**{key: wallets_dict[key] for key in sorted(wallets_dict)}, **wallets_menu}
-    size: tuple[int, ...] = await get_size_wallet(len_wallet=len_wallet) if (len_wallet :=
-                                                                             len(wallets_dict)) > 1 else (1, 1, 1)
+    size: tuple[int, ...] = await get_size_wallet(len_wallet=len_wallet, count_any_button=2) if (len_wallet :=
+                                                                                                 len(wallets_dict)
+                                                                                                 ) > 1 else (1, 1, 1)
     await callback.message.edit_text(text=botMessages['walletsMenu'],
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back_page=callback_data.page,
@@ -144,11 +144,68 @@ async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallba
     name_net: str = state_data['crypto_to'].upper()
     address: str = state_data['address']
     wallet_type: str = state_data['walletType'].upper()
-    await add_wallet(name_net=name_net, address=address, type_wallet=wallet_type)
-    await callback.message.edit_text(text=successfullyMessage['addWallet'].format(nameNet=name_net,
-                                                                                  address=address,
-                                                                                  walletType=wallet_type),
+    response = await add_wallet(name_net=name_net, address=address, type_wallet=wallet_type)
+    if response is None:
+        await callback.message.edit_text(text=successfullyMessage['addWallet'].format(nameNet=name_net,
+                                                                                      address=address,
+                                                                                      walletType=wallet_type),
+                                         reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                            back='wallets',
+                                                                            back_name=botMessages['backWallets']))
+    else:
+        await callback.message.edit_text(text=errorLexicon['WalletExist'].format(nameNet=name_net,
+                                                                                 address=address,
+                                                                                 walletType=wallet_type),
+                                         reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                            back='wallets',
+                                                                            back_name=botMessages['backWallets']))
+    await state.clear()
+
+
+@router.callback_query(AdminCallbackFactory.filter(), IsToken(), IsAdmin())
+async def print_wallets(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.clear()
+    await state.update_data(name_net=callback_data.page)
+    wallets_list: list[tuple[int, str]] = await get_wallets_data(name_net=callback_data.page.upper())
+    text, wallets_dict = await preprocess_wallets(wallets=wallets_list)
+    await state.update_data(**wallets_dict)
+    await callback.message.edit_text(text=text,
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back='wallets',
-                                                                        back_name=botMessages['backWallets']))
-    await state.clear()
+                                                                        back_page=callback_data.page,
+                                                                        sizes=await get_size_wallet(
+                                                                            len_wallet=len(wallets_dict),
+                                                                            count_any_button=1),
+                                                                        **wallets_dict))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page.regexp(r'^id-\d+$')), IsAdmin())
+async def address_menu(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.update_data(token=callback_data.page)
+    state_data = await state.get_data()
+    await callback.message.edit_text(text=botMessages['addressMenu'],
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        back=state_data['name_net'],
+                                                                        back_page=callback_data.page,
+                                                                        sizes=(2, 1),
+                                                                        **addressMenu))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'deleteAddress'), IsAdmin())
+async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    sureDelete_copy = sureDelete.copy()
+    sureDelete_copy[callback_data.back_page] = sureDelete_copy.pop('no')
+    await callback.message.edit_text(text=botMessages['sureDelete'],
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        sizes=(2,),
+                                                                        **sureDelete_copy))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), IsAdmin())
+async def delete_address(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    state_data = await state.get_data()
+    address_id = int(state_data['token'].split('-')[1])
+    await delete_wallet(wallet_id=address_id)
+    await callback.message.edit_text(text=botMessages['deleteAddress'].format(wallet=state_data[state_data['token']]),
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        **addressDelete))
