@@ -3,7 +3,8 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceToken, choiceMethod
+from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceToken, choiceMethod, \
+    backLexicon
 
 from keyboard.keyboard_factory import create_fac_menu
 from factories.factory import UserCallbackFactory
@@ -30,7 +31,7 @@ async def main_handler(callback: CallbackQuery, state: FSMContext, callback_data
 @router.callback_query(UserCallbackFactory.filter(F.page == 'info'))
 async def info_handler(callback: CallbackQuery) -> None:
     # TODO: Сделать информационный текст о боте
-    pass
+    await callback.answer()
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'profile'))
@@ -121,7 +122,7 @@ async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory
 
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'repeat', 'no'})),
                        StateFilter(FSMFiatCrypto.check_validate))
-async def repeat_get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
+async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> None:
     logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
@@ -138,7 +139,7 @@ async def choice_method_get_sum(callback: CallbackQuery, callback_data: UserCall
                                                                         back_page=callback_data.page,
                                                                         back='main',
                                                                         sizes=(3, 1),
-                                                                        back_name=botMessages['cancelLexicon'],
+                                                                        back_name=backLexicon['cancelLexicon'],
                                                                         **choiceMethod))
 
 # TODO: дальше смысла пользовательскую часть писать нет. надо написать админскую часть,
