@@ -7,7 +7,8 @@ from factories.factory import UserCallbackFactory
 from filters.filters import IsCryptoAddress
 from keyboard.keyboard_factory import create_fac_menu
 
-from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon
+from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon, \
+    backLexicon
 from services import logger
 from states.states import FSMFiatCrypto
 
@@ -35,7 +36,7 @@ async def add_mission(message: Message, state: FSMContext) -> None:
                                                                         wallet_address=message.text),
                          reply_markup=await create_fac_menu(UserCallbackFactory,
                                                             back='main',
-                                                            back_name=botMessages['cancelLexicon'],
+                                                            back_name=backLexicon['cancelLexicon'],
                                                             sizes=(2, 1),
                                                             **checkCorrectAddress
                                                             ))
@@ -50,6 +51,6 @@ async def error_address(message: Message, state: FSMContext) -> None:
                                                                   wallet_address=message.text),
                          reply_markup=await create_fac_menu(UserCallbackFactory,
                                                             back='main',
-                                                            back_name=botMessages['cancelLexicon'],
+                                                            back_name=backLexicon['cancelLexicon'],
                                                             **repeatAddress
                                                             ))
