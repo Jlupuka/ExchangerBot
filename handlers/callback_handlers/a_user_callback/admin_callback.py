@@ -5,18 +5,21 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
-from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet, get_wallets_data, delete_wallet
+from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet, get_wallets_data, delete_wallet, \
+    get_wallet_data, update_work_type_wallet, update_percent
 from databaseAPI.commands.submissions_commands import get_all_missions_wait
+from databaseAPI.tables import WalletAddress
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
-    checkCorrectAddWallet, successfullyMessage, addressMenu, sureDelete, addressDelete, errorLexicon
+    checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
+    statusWork, backLexicon
 
 from keyboard.keyboard_factory import create_fac_menu
 from factories.factory import AdminCallbackFactory
 
 from services import logger
-from services.wallets_service import get_wallets, get_size_wallet, preprocess_wallets
-from states.states import FSMAddWallet
+from services.walletService import get_wallets, get_size_wallet, preprocess_wallets
+from states.states import FSMAddWallet, FSMPercentEdit
 
 router: Router = Router()
 
@@ -101,8 +104,7 @@ async def repeat_add_wallet(callback: CallbackQuery, callback_data: AdminCallbac
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'repeat'), IsAdmin())
-async def repeat_get_crypto_address(callback: CallbackQuery, callback_data: AdminCallbackFactory,
-                                    state: FSMContext) -> None:
+async def repeat_get_crypto_address(callback: CallbackQuery, state: FSMContext) -> None:
     now_state: str = await state.get_state()
     text = 'aaa'
     if now_state == FSMAddWallet.type_wallet:
@@ -114,7 +116,7 @@ async def repeat_get_crypto_address(callback: CallbackQuery, callback_data: Admi
     await callback.message.edit_text(text=text,
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back='wallets',
-                                                                        back_name=botMessages['backWallets']))
+                                                                        back_name=backLexicon['backLexicon']))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'crypto', 'rub'})),
@@ -133,13 +135,13 @@ async def check_add_wallet_data(callback: CallbackQuery, callback_data: AdminCal
                                                                                    walletType=wallet_type),
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back='wallets',
-                                                                        back_name=botMessages['backWallets'],
+                                                                        back_name=backLexicon['backLexicon'],
                                                                         sizes=(2, 1),
                                                                         **checkCorrectAddWallet))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), StateFilter(FSMAddWallet.check_correct), IsAdmin())
-async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str: str] = await state.get_data()
     name_net: str = state_data['crypto_to'].upper()
     address: str = state_data['address']
@@ -151,14 +153,14 @@ async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallba
                                                                                       walletType=wallet_type),
                                          reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                             back='wallets',
-                                                                            back_name=botMessages['backWallets']))
+                                                                            back_name=backLexicon['backLexicon']))
     else:
         await callback.message.edit_text(text=errorLexicon['WalletExist'].format(nameNet=name_net,
                                                                                  address=address,
                                                                                  walletType=wallet_type),
                                          reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                             back='wallets',
-                                                                            back_name=botMessages['backWallets']))
+                                                                            back_name=backLexicon['backLexicon']))
     await state.clear()
 
 
@@ -191,9 +193,9 @@ async def address_menu(callback: CallbackQuery, callback_data: AdminCallbackFact
                                                                         **addressMenu))
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'deleteAddress'), IsAdmin())
-async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
-    sureDelete_copy = sureDelete.copy()
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'deleteAddress'), StateFilter(None), IsAdmin())
+async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+    sureDelete_copy = sureLexicon.copy()
     sureDelete_copy[callback_data.back_page] = sureDelete_copy.pop('no')
     await callback.message.edit_text(text=botMessages['sureDelete'],
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
@@ -201,11 +203,62 @@ async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallb
                                                                         **sureDelete_copy))
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), IsAdmin())
-async def delete_address(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), StateFilter(None), IsAdmin())
+async def delete_address(callback: CallbackQuery, state: FSMContext) -> None:
     state_data = await state.get_data()
     address_id = int(state_data['token'].split('-')[1])
     await delete_wallet(wallet_id=address_id)
     await callback.message.edit_text(text=botMessages['deleteAddress'].format(wallet=state_data[state_data['token']]),
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         **addressDelete))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page.in_({'statusWork', 'addressEdit'})),
+                       StateFilter(None, FSMPercentEdit.check_percent), IsAdmin())
+async def address_edit(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.set_state(None)
+    state_data = await state.get_data()
+    wallet_id = int(state_data['token'].split('-')[1])
+    wallet_data: WalletAddress = await get_wallet_data(wallet_id=wallet_id)
+    status_work = wallet_data.Status
+    percent = wallet_data.Percent
+    address = wallet_data.Address
+    address_edit_copy = addressEdit.copy()
+    if callback_data.page == 'statusWork':
+        status_work = await update_work_type_wallet(wallet_id=wallet_id, work_type=not status_work)
+    address_edit_copy['statusWork'] = statusWork[not status_work]
+    await callback.message.edit_text(text=botMessages['addressEdit'].format(address=address,
+                                                                            percent=percent,
+                                                                            workType=statusWork[status_work]),
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        back_page=callback_data.back_page,
+                                                                        back=state_data['token'],
+                                                                        sizes=(2, 1),
+                                                                        **address_edit_copy))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page.in_({'percentEdit', 'repeatGetPercent'})),
+                       StateFilter(None, FSMPercentEdit.check_percent), IsAdmin())
+async def percent_edit(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(FSMPercentEdit.get_percent)
+    state_data: dict[str: str] = await state.get_data()
+    back_page: str = state_data['token']
+    await callback.message.edit_text(text=botMessages['percentEdit'],
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        back=back_page,
+                                                                        back_name=backLexicon['cancelLexicon']))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'),
+                       StateFilter(FSMPercentEdit.check_percent), IsAdmin())
+async def update_percent_wallet(callback: CallbackQuery,
+                                state: FSMContext) -> None:
+    await state.set_state(None)
+    state_data = await state.get_data()
+    wallet_id = int(state_data['token'].split('-')[1])
+    percent = state_data['percent']
+    await update_percent(wallet_id=wallet_id, percent=percent)
+    await callback.message.edit_text(text=botMessages['completedEditPercent'].format(percent=percent),
+                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                                        back=state_data['token'],
+                                                                        back_name=backLexicon['backLexicon']))

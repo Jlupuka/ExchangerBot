@@ -4,12 +4,13 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
 from factories.factory import AdminCallbackFactory
-from filters.filters import IsAdmin, CheckState
+from filters.filters import IsAdmin, CheckState, IsDigitPercent
 from keyboard.keyboard_factory import create_fac_menu
 
-from lexicon.lexicon import botMessages, startCallbackAdmin, errorLexicon, repeatAddress, walletType
+from lexicon.lexicon import botMessages, startCallbackAdmin, errorLexicon, repeatAddress, walletType, \
+    repeatGetPercent, backLexicon, getPercent
 from services.cryptoService import CryptoCheck, token_patterns
-from states.states import FSMAddWallet
+from states.states import FSMAddWallet, FSMPercentEdit
 
 router = Router()
 
@@ -34,12 +35,12 @@ async def get_crypto_to(message: Message, state: FSMContext) -> None:
         await message.answer(text=botMessages['getNameNet'],
                              reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                 back='wallets',
-                                                                back_name=botMessages['backWallets']))
+                                                                back_name=backLexicon['backLexicon']))
     else:
         await message.answer(text=errorLexicon['errorToken'].format(net=message.text),
                              reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                 back='wallets',
-                                                                back_name=botMessages['cancelLexicon'],
+                                                                back_name=backLexicon['cancelLexicon'],
                                                                 **repeatAddress))
 
 
@@ -54,12 +55,34 @@ async def get_crypto_address(message: Message, state: FSMContext) -> None:
         await message.answer(text=botMessages['getWalletType'],
                              reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                 back='wallets',
-                                                                back_name=botMessages['cancelLexicon'],
+                                                                back_name=backLexicon['cancelLexicon'],
                                                                 sizes=(2, 1),
                                                                 **walletType))
     else:
         await message.answer(text=errorLexicon['errorAddress'].format(net=crypto_token, wallet_address=address),
                              reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                 back='wallets',
-                                                                back_name=botMessages['cancelLexicon'],
+                                                                back_name=backLexicon['cancelLexicon'],
                                                                 **repeatAddress))
+
+
+@router.message(StateFilter(FSMPercentEdit.get_percent), IsDigitPercent(), IsAdmin())
+async def get_percent(message: Message, state: FSMContext) -> None:
+    await state.set_state(FSMPercentEdit.check_percent)
+    await state.update_data(percent=float(message.text))
+    await message.answer(text=botMessages['getPercent'].format(percent=message.text),
+                         reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                            back='addressEdit',
+                                                            back_name=backLexicon['cancelLexicon'],
+                                                            **getPercent))
+
+
+@router.message(StateFilter(FSMPercentEdit.get_percent), IsAdmin())
+async def error_get_percent(message: Message, state: FSMContext) -> None:
+    await state.set_state(FSMPercentEdit.check_percent)
+    await message.answer(text=errorLexicon['getPercent'].format(percent=message.text),
+                         reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                                            sizes=(2,),
+                                                            back='addressEdit',
+                                                            back_name=backLexicon['cancelLexicon'],
+                                                            **repeatGetPercent))
