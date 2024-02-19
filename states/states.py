@@ -24,3 +24,8 @@ class FSMAddWallet(StatesGroup):
     address = State()
     type_wallet = State()
     check_correct = State()
+
+
+class FSMPercentEdit(StatesGroup):
+    get_percent = State()
+    check_percent = State()
