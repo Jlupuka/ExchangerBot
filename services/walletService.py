@@ -1,14 +1,21 @@
+import random
 import re
-from databaseAPI.commands.walletAddress_commands import get_all_name_net_wallets
+from typing import Type
+
+from databaseAPI.commands.walletAddress_commands import get_all_name_net_wallets, get_all_name_net_crypto_wallets, \
+    get_wallets_data, get_wallets_for_mission
+from databaseAPI.tables import WalletAddress
+from lexicon.lexicon import cryptoSymbol
 
 
-async def get_wallets() -> dict[str: str]:
+async def get_wallets(func: Type[get_all_name_net_wallets] | Type[get_all_name_net_crypto_wallets]) -> dict[str: str]:
     """
     Returns all short names of currencies that exist in the database
+    :param func: (Type[get_all_name_net_wallets] | Type[get_all_name_net_crypto_wallets])
     :return: (dict[str]) key is the name in lower case, value - in upper case
     """
-    wallets_data: set[str] = await get_all_name_net_wallets()
-    return {wallet.lower(): wallet.upper() for wallet in wallets_data}
+    wallets_data: set[str] = await func()
+    return {wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}' for wallet in sorted(wallets_data)}
 
 
 async def get_size_wallet(len_wallet: int, count_any_button: int = 0) -> tuple[int, ...]:
@@ -53,3 +60,8 @@ async def check_number(input_str: str) -> bool:
     if re.match(r'^\d*[.,]?\d+$', input_str):
         return True
     return False
+
+
+async def random_wallet(name_net: str) -> WalletAddress:
+    wallets: list[WalletAddress] = await get_wallets_for_mission(name_net=name_net)
+    return random.choice(wallets)
