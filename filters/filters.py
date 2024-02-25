@@ -1,11 +1,13 @@
+from typing import Type
+
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import check_admin
 from databaseAPI.commands.walletAddress_commands import get_all_name_net_wallets
-from factories.factory import AdminCallbackFactory
-from services.cryptoService import CryptoCheck
+from factories.factory import AdminCallbackFactory, UserCallbackFactory
+from services.cryptoService import CryptoCheck, min_sum
 from services.walletService import check_number
 
 
@@ -27,6 +29,7 @@ class IsCryptoAddress(BaseFilter):
     """
     Checks if the entered message is a valid cryptocurrency wallet address
     """
+
     async def __call__(self, message: Message, state: FSMContext) -> bool:
         """
         Checks if the entered message is a valid cryptocurrency wallet address
@@ -35,13 +38,14 @@ class IsCryptoAddress(BaseFilter):
         :return: (bool) Result on whether the address is a cryptocurrency wallet or not
         """
         state_data = await state.get_data()
-        return (await CryptoCheck.validate_crypto_address(crypto=state_data['crypto_to'], address=message.text))[0]
+        return (await CryptoCheck.validate_crypto_address(token=state_data['currency_to'], address=message.text))[0]
 
 
 class CheckState(BaseFilter):
     """
     Check if there is such an argument at the moment of the filter call
     """
+
     def __init__(self, pattern: str) -> None:
         """
         Takes an argument to check if it is in the FSM
@@ -61,28 +65,45 @@ class CheckState(BaseFilter):
 
 
 class IsToken(BaseFilter):
+    def __init__(self, factory: Type[AdminCallbackFactory] | Type[UserCallbackFactory]) -> None:
+        self.factory = factory
+
     """
     Checks if such currency (its brief designation) exists in the database
     """
+
     async def __call__(self, callback: CallbackQuery) -> bool:
         """
         Checks if such currency (its brief designation) exists in the database
         :param callback: (aiogram.types.CallbackQuery)
         :return: (bool) Result to exist or not
         """
-        token = AdminCallbackFactory.unpack(callback.data).page
+        token = self.factory.unpack(callback.data).page
         token_in_base = await get_all_name_net_wallets()
         return token.upper() in token_in_base
 
 
-class IsDigitPercent(BaseFilter):
+class IsDigit(BaseFilter):
     """
     Checks whether the entered message is an integer or a real number
     """
-    async def __call__(self, message: Message) -> bool:
+
+    def __init__(self, check_min: bool = False) -> None:
+        self.check_min = check_min
+
+    async def __call__(self, message: Message, state: FSMContext) -> bool:
         """
         Checks whether the entered message is an integer or a real number
         :param message: (aiogram.types.Message) User message
+        :param state: (aiogram.fsm.context.FSMContext) State machine
         :return: The result on what is or is not
         """
-        return await check_number(input_str=message.text)
+        is_number = await check_number(input_str=message.text)
+        if is_number:
+            if self.check_min is False:
+                return is_number
+            state_data = await state.get_data()
+            return await (CryptoCheck.transaction_amount(amount=float(message.text),
+                                                         currency_to='RUB',
+                                                         currency_from=state_data['currency_from'].upper())) >= min_sum
+        return False
