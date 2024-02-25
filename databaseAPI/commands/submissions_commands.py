@@ -18,21 +18,21 @@ async def select_count_user_missions(user_id: int) -> int:
 
 async def add_application(user_id: int,
                           address_id: int,
-                          amount: int,
-                          typetrans: str,
-                          address_user: str) -> None:
+                          amount: int | float,
+                          typeTrans: str,
+                          address_user: str) -> Submissions:
     async with get_session() as session:
         submission_object: Submissions = Submissions(
             UserId=user_id,
             AddressId=address_id,
             Amount=amount,
-            TypeTrans=typetrans,
+            TypeTrans=typeTrans,
             AddressUser=address_user
         )
         session.add(submission_object)
         try:
             await session.commit()
-            return None
+            return submission_object
         except IntegrityError as IE:
             logger.error(f"Indentation error in function '{__name__}': {IE}")
             await session.rollback()

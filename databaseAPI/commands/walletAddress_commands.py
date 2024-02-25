@@ -112,3 +112,32 @@ async def update_percent(wallet_id: int, percent: float) -> None:
         except IntegrityError as IE:
             logger.error(f"Indentation error in function '{__name__}': {IE}")
             await session.rollback()
+
+
+async def get_all_name_net_crypto_wallets() -> set[str] | bool:
+    async with get_session() as session:
+        sql: str = select(WalletAddress.NameNet).where(
+            WalletAddress.typeWallet == 'CRYPTO'
+        )
+        wallet_chunk: ChunkedIteratorResult = await session.execute(sql)
+        wallet_scalar = wallet_chunk.scalars().all()
+        try:
+            return set(wallet_scalar) if wallet_scalar else False
+        except NoResultFound as NRF:
+            logger.error(f"Indentation error in function '{__name__}': {NRF}")
+            await session.rollback()
+
+
+async def get_wallets_for_mission(name_net: str, work_type: bool = True) -> list[WalletAddress]:
+    async with get_session() as session:
+        sql: str = select(WalletAddress).where(
+            WalletAddress.NameNet == name_net,
+            WalletAddress.Status == work_type
+        )
+        wallets_chunk: ChunkedIteratorResult = await session.execute(sql)
+        wallets_scalar: list[WalletAddress] = wallets_chunk.scalars().all()
+        try:
+            return wallets_scalar if wallets_scalar else False
+        except NoResultFound as NRF:
+            logger.error(f"Indentation error in function '{__name__}': {NRF}")
+            await session.rollback()
