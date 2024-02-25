@@ -61,7 +61,33 @@ botMessages: dict[str: str] = {
     'getPercent': '🔶 Вы уверены, что это верный процент - <code>{percent}</code>',
     'percentEdit': '📝 Напишите процент, который будет стоять на этом кошельке в виде комиссии',
     'completedEditPercent': '''🟢 Процент успешно сохранен! ✅
-<b><i>Новый процент</i></b>: <code>{percent}</code>'''
+<b><i>Новый процент</i></b>: <code>{percent}</code>''',
+    'getSum': '''Напишите сумму перевода, который хотите совершить для обмена.
+💳 <i>Минимальный ввод</i>: <code>{min_sum} {currency_from}</code> 
+⚖️ Курс <i><b>{currency_to}</b></i> ⟶ <i><b>{currency_from}</b></i> = <code>{currency_rate}</code>''',
+    'checkTheCorrectTransaction': '''📝 <b>Данные по сделки:</b>
+<b><i>💱 Валюта в которой придут деньги:</i></b> <code>{name_net}</code>
+<b><i>🪪 Кошелек куда придут деньги:</i></b> <code>{address}</code>
+<b><i>💳 Сумма к оплате:</i></b> <code>{amount_from} {currency_from}</code>
+<b><i>💸 Сумма к получению:</i></b> <code>{amount_to} {currency_to}</code>
+<u><i><b>🔶 Все верно?</b></i></u>
+''',
+    'receiptVerification': '''💼 <i>Для получения <code>{amount_to}</code> <b>{currency_to}</b>
+📨 Переведите <code>{amount_from}</code> <b>{type_transaction}</b>
+💳 На эти реквизиты ⟶ <code>{work_wallet}</code></i>
+
+<b>                     📌 <u>ВНИМАНИЕ</u> 📌
+
+🖍️ <u><i>НЕ УДАЛЯЙТЕ</i></u> это сообщение!
+📜 Для того, чтобы Ваша заявка вступила в силу ⬇️
+･ <u><i>ОБЯЗАТЕЛЬНО, после</i></u> отправки средств надо нажать на кнопку "Отправил ✅".
+</b>''',
+    'createMission': '''<i>Вы успешно создали заявку на обмен!</i>
+<b>⬇️ Данные по сделке ⬇️
+📝 <i>Номер сделки</i> ⟶ <code>#{mission_id}</code>
+💳 <i>Реквизиты куда придут средства</i> ⟶ <code>{user_requisites}</code>
+💸 <i>Сумма средств, подлежащая зачислению на Ваш кошелек</i> ⟶ <code>{amount} {currency_to}</code></b>
+'''
 }
 
 errorLexicon: dict[str: str] = {
@@ -75,14 +101,16 @@ errorLexicon: dict[str: str] = {
 🛰️ Валюта кошелька: <code>{nameNet}</code>
 💳 Реквизиты кошелька: <code>{address}</code>
 🗃️ Тип кошелька: <code>{walletType}</code>''',
-    'getPercent': '''🔴 <b>ОШИБКА</b> 🔴
-Не верное сообщение, не является числом - <code>{percent}</code>'''
+    'IsDigit': '''🔴 <b>ОШИБКА</b> 🔴
+Не верное сообщение, не является числом - <code>{digit}</code>''',
+    'getSum_minimal': '''🔴 <b>ОШИБКА</b> 🔴 
+<code>{amount}</code> <b>{currency_from}</b> - меньше допустимого значения.'''
 }
 
 startCallbackUser: dict[str: str] = {
-    'rub-crypto': 'RUB 💸 ⟶ CRYPTO 🪙',
-    'crypto-rub': 'CRYPTO 🪙 ⟶ RUB 💸',
-    'crypto-crypto': 'CRYPTO 🪙 ⟶ CRYPTO 🪙',
+    'rub-crypto': 'RUB 💸 ⟶ CRYPTO ₿',
+    'crypto-rub': 'CRYPTO ₿ ⟶ RUB 💸',
+    'crypto-crypto': 'CRYPTO ₿ ⟶ CRYPTO ₿',
     'info': 'Информация 📒',
     'profile': 'Профиль 🪪'
 }
@@ -120,9 +148,9 @@ repeatAddress: dict[str: str] = {
 }
 
 choiceMethod: dict[str: str] = {
-    'crypto': 'CRYPTO 🪙',
-    'rub': 'RUB 🇷🇺₽',
-    'usd': 'USD 🇺🇸$'
+    'crypto': 'CRYPTO ₿',
+    'rub': '🇷🇺 RUB ₽',
+    'usd': '🇺🇸 USD $'
 }
 
 settingsMenu: dict[str: str] = {
@@ -187,14 +215,36 @@ statusWork: dict[str: str] = {
 }
 
 backLexicon: dict[str: str] = {
-    'cancelLexicon': 'Отменить🔚',
+    'cancelLexicon': 'Отменить 🔚',
     'backLexicon': 'Вернуться 🔚',
+    'backMainMenu': 'Главное меню 🔚'
 }
 
 repeatGetPercent: dict[str: str] = {
     'repeatGetPercent': 'Повторить 🔁'
 }
 
-getPercent: dict[str: str] = {
-    'yes': 'Да ✅'
+checkData: dict[str: str] = {
+    'choiceMethod': 'Да ✅'
+}
+
+cryptoSymbol: dict[str: str] = {
+    'symbol': '🪙'
+}
+
+minSum: dict[str: str] = {
+    'minSum': '💱 Минимальная сумма'
+}
+
+getSum: dict[str: str] = {
+    'getSum': 'Да ✅',
+    'repeatGetSum': 'Повторить ввод 🔁'
+}
+
+receiptVerification: dict[str: str] = {
+    'sent': 'Отправил ✅'
+}
+
+repeatGetSum: dict[str: str] = {
+    'repeatGetSum': 'Повторить ввод 🔁'
 }
