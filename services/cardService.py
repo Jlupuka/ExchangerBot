@@ -1,3 +1,6 @@
+import re
+
+
 class CardCheck:
     @staticmethod
     def validate_luhn(card_number: str) -> bool:
@@ -15,3 +18,10 @@ class CardCheck:
             total_sum += digit
             is_second_digit = not is_second_digit
         return total_sum % 10 == 0
+
+    @staticmethod
+    async def preprocess_phone(phone: str) -> str:
+        formatted_number = re.sub(r'[+\s\-()]', '', phone)
+        if formatted_number.startswith('8') or formatted_number.startswith('7'):
+            formatted_number = '+7' + formatted_number[1:]
+        return formatted_number
