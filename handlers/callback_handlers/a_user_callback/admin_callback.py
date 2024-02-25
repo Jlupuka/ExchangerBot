@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
 from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet, get_wallets_data, delete_wallet, \
-    get_wallet_data, update_work_type_wallet, update_percent
+    get_wallet_data, update_work_type_wallet, update_percent, get_all_name_net_wallets
 from databaseAPI.commands.submissions_commands import get_all_missions_wait
 from databaseAPI.tables import WalletAddress
 from filters.filters import IsAdmin, IsToken
@@ -70,7 +70,7 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'wallets'), IsAdmin())
 async def wallets_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
-    wallets_dict: dict[str: str] = await get_wallets()
+    wallets_dict: dict[str: str] = await get_wallets(func=get_all_name_net_wallets)
     wallets_menu: dict[str: str] = walletsMenu.copy()
     if wallets_dict:
         wallets_menu = {**{key: wallets_dict[key] for key in sorted(wallets_dict)}, **wallets_menu}
@@ -88,7 +88,7 @@ async def wallets_handler(callback: CallbackQuery, callback_data: AdminCallbackF
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'addWallet'), IsAdmin())
 async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
-    await state.set_state(FSMAddWallet.crypto_to)
+    await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(text=botMessages['addWallet'],
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back=callback_data.back_page))
@@ -97,7 +97,7 @@ async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallba
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'no'), StateFilter(FSMAddWallet.type_wallet), IsAdmin())
 async def repeat_add_wallet(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
-    await state.set_state(FSMAddWallet.crypto_to)
+    await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(text=botMessages['addWallet'],
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back=callback_data.back_page))
@@ -112,7 +112,7 @@ async def repeat_get_crypto_address(callback: CallbackQuery, state: FSMContext) 
         await state.set_state(FSMAddWallet.address)
     elif now_state == FSMAddWallet.address:
         text: str = botMessages['addWallet']
-        await state.set_state(FSMAddWallet.crypto_to)
+        await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(text=text,
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back='wallets',
@@ -127,7 +127,7 @@ async def check_add_wallet_data(callback: CallbackQuery, callback_data: AdminCal
     await state.update_data(walletType=callback_data.page)
     await state.set_state(FSMAddWallet.check_correct)
     state_data: dict[str: str] = await state.get_data()
-    name_net: str = state_data['crypto_to']
+    name_net: str = state_data['currency_to']
     address: str = state_data['address']
     wallet_type: str = callback_data.page.upper()
     await callback.message.edit_text(text=botMessages['checkDataAddWallet'].format(nameNet=name_net,
@@ -143,7 +143,7 @@ async def check_add_wallet_data(callback: CallbackQuery, callback_data: AdminCal
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), StateFilter(FSMAddWallet.check_correct), IsAdmin())
 async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str: str] = await state.get_data()
-    name_net: str = state_data['crypto_to'].upper()
+    name_net: str = state_data['currency_to'].upper()
     address: str = state_data['address']
     wallet_type: str = state_data['walletType'].upper()
     response = await add_wallet(name_net=name_net, address=address, type_wallet=wallet_type)
@@ -164,7 +164,7 @@ async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None
     await state.clear()
 
 
-@router.callback_query(AdminCallbackFactory.filter(), IsToken(), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory), IsAdmin())
 async def print_wallets(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await state.update_data(name_net=callback_data.page)
