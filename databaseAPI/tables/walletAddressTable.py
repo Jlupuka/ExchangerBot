@@ -9,5 +9,5 @@ class WalletAddress(Base):
     NameNet = Column(String(255), nullable=False)
     Address = Column(String(255), unique=True, nullable=False)
     Status = Column(Boolean, default=True)  # True | False
-    Percent = Column(Float, default=5.0)
+    Percent = Column(Float, default=1.05)
     typeWallet = Column(String(20), nullable=False)  # Fiat | Crypto
