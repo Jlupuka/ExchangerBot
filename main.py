@@ -20,7 +20,7 @@ async def main() -> None:
     # Подгружаем конфиг
     config: Config = load_config()
 
-    redis = Redis(host=config.Redis.HOST, port=config.Redis.PORT)
+    redis: Redis = Redis(host=config.Redis.HOST, port=config.Redis.PORT)
 
     storge: RedisStorage = RedisStorage(redis=redis)
 
