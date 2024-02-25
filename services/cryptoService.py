@@ -1,3 +1,4 @@
+import math
 import re
 from typing import Coroutine, Any, Type
 
@@ -15,8 +16,11 @@ token_patterns = {
     'doge': r'D[a-zA-Z1-9]{33}$',
     'tron': r'T[a-zA-Z0-9]{33}$',
     'xmr': r'[84][0-9AB][1-9A-HJ-NP-Za-km-z]{93}$',
-    'rub': CardCheck.validate_luhn
+    'rub': CardCheck.validate_luhn,
+    'спб': r'^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$'
 }
+
+min_sum = 1000
 
 
 class CryptoCheck:
@@ -60,6 +64,26 @@ class CryptoCheck:
                 return await response.json()
 
     @staticmethod
+    async def currency_rate(currency_from: str, currency_to: str, margins: float = 1.05) -> float:
+        if currency_to == 'XMR':
+            currency = round(await CryptoCheck.get_currency_by_binance() * margins, 7)
+            if currency_from == 'RUB':
+                usd = await CryptoCheck.currency_rate(currency_from='RUB', currency_to='USD', margins=1)
+                currency *= usd
+            return round(currency, 2)
+        return (1 / float((await CryptoCheck.ticker(currency_from))['data']['rates'][currency_to])) * margins
+
+    @staticmethod
+    async def get_currency_by_binance(symbol: str = 'XMRUSDT') -> float:
+        async with aiohttp.ClientSession() as session:
+            url = 'https://api.binance.com/api/v3/ticker/price'
+            params = {'symbol': symbol}
+            async with session.get(url=url, params=params) as response:
+                data = await response.json()
+                currency_rate = data['price']
+                return float(currency_rate)
+
+    @staticmethod
     async def get_balance(wallet_address: str, token: str, currency: str) -> float:
         """
         We get the cryptocurrency wallet balance and convert it to the required currency.
@@ -71,7 +95,7 @@ class CryptoCheck:
         currency = currency.upper()
         token = token.upper()
         try:
-            currency_rate = float((await CryptoCheck.ticker(token))['data']['rates'][currency])
+            currency_rate: float = await CryptoCheck.currency_rate(currency_from=token, currency_to=currency)
             match token:
                 case 'BTC':
                     money = (await CryptoCheck.btc(wallet_address=wallet_address))['balance'] / 1e8
@@ -110,19 +134,43 @@ class CryptoCheck:
                     raise BadRequest(f'Bad request: {response.status}. Link: {url}')
 
     @staticmethod
-    async def validate_crypto_address(crypto: str, address: str) -> tuple[bool, Type[NotFoundCryptoToken]] | tuple[
+    async def validate_crypto_address(token: str, address: str) -> tuple[bool, Type[NotFoundCryptoToken]] | tuple[
                                                                     bool, Type[BadCryptoAddress]] | tuple[bool, None]:
         """
         Checks if the token and crypto address are valid
-        :param crypto: (str) crypto token
+        :param token: (str) crypto token
         :param address: (str) address wallet
         :return: Logical expression, in case of error - error class
         """
-        if crypto.lower() == 'rub':
+        token = token.lower()
+        if token == 'rub':
             return token_patterns['rub'](address), None
-        if crypto not in token_patterns:
+        if token not in token_patterns:
             return False, NotFoundCryptoToken
-        pattern = token_patterns[crypto]
+        pattern = token_patterns[token]
         if not re.match(pattern, address):
             return False, BadCryptoAddress
         return True, None
+
+    @staticmethod
+    async def minimal_summa(minSum: int | float, currency_from: str, currency_to: str) -> float:
+        if currency_from != 'RUB':
+            currency_rate = await CryptoCheck.currency_rate(currency_from='RUB',
+                                                            currency_to=currency_from,
+                                                            margins=1)
+        else:
+            currency_rate = await CryptoCheck.currency_rate(currency_from=currency_from,
+                                                            currency_to=currency_to,
+                                                            margins=1)
+        minSum /= currency_rate
+        return round(minSum, 2) if currency_from in {'RUB', 'USD'} else float(format(minSum, '.7f'))
+
+    @staticmethod
+    async def transaction_amount(amount: int | float, currency_from: str,
+                                 currency_to: str,
+                                 margins: float | int = 1) -> float:
+        currency_rate = await CryptoCheck.currency_rate(currency_from=currency_to,
+                                                        currency_to=currency_from,
+                                                        margins=1)
+        amount *= currency_rate / margins
+        return math.ceil(amount) if currency_to in {'RUB', 'USD'} else float(format(amount, '.7f'))
