@@ -6,11 +6,6 @@ from aiogram import BaseMiddleware
 from aiogram.types import Message
 
 from databaseAPI.commands.userCommands.user_commands import check_user
-from databaseAPI.commands.userCommands.admin_commands import make_admin, check_admin
-
-from config.config import load_config, Config
-
-config: Config = load_config()
 
 
 class DataBaseCheckUserMiddleware(BaseMiddleware):

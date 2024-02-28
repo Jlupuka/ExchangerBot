@@ -4,7 +4,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
+from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.tables import WalletAddress
@@ -45,12 +45,12 @@ async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallba
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'settings', 'workType'})), IsAdmin())
 async def settings_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
-    admin_work_type: bool = await get_workType(user_id=callback.from_user.id)
+    admin_work_type: bool = await AdminAPI.get_workType(user_id=callback.from_user.id)
     if callback_data.page == 'workType':
-        admin_work_type = await update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
+        admin_work_type = await AdminAPI.update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
     count_wait_missions: int = len(await SubmissionsAPI.get_all_missions_wait(status='WAIT'))
     count_wallet: int = await WalletAPI.count_wallets()
-    count_admin_work: int = await count_adminsWork()
+    count_admin_work: int = await AdminAPI.count_adminsWork()
     buttons: dict[str: str] = settingsMenu.copy()
     buttons['workType'] = workType[not admin_work_type]
     if admin_work_type:

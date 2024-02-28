@@ -4,7 +4,7 @@ from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from databaseAPI.commands.userCommands.admin_commands import check_admin
+from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck, min_sum
@@ -22,7 +22,7 @@ class IsAdmin(BaseFilter):
         :param message: aiogram.filters.Message
         :return: bool
         """
-        return await check_admin(user_id=message.from_user.id)
+        return await AdminAPI.check_admin(user_id=message.from_user.id)
 
 
 class IsCryptoAddress(BaseFilter):
