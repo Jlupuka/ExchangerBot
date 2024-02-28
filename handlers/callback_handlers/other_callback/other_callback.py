@@ -20,5 +20,3 @@ async def send_any_message(callback: CallbackQuery, callback_data: AdminCallback
     await callback.answer('Что?')
     logger.debug(await state.get_data())
     logger.info(callback_data)
-
-

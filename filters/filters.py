@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import check_admin
-from databaseAPI.commands.walletAddress_commands import get_all_name_net_wallets
+from databaseAPI.commands.walletAddress_commands import WalletAPI
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck, min_sum
 from services.walletService import check_number
@@ -79,7 +79,7 @@ class IsToken(BaseFilter):
         :return: (bool) Result to exist or not
         """
         token = self.factory.unpack(callback.data).page
-        token_in_base = await get_all_name_net_wallets()
+        token_in_base = await WalletAPI.get_all_name_net_wallets()
         return token.upper() in token_in_base
 
 

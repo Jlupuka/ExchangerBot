@@ -2,13 +2,14 @@ import random
 import re
 from typing import Type
 
-from databaseAPI.commands.walletAddress_commands import get_all_name_net_wallets, get_all_name_net_crypto_wallets, \
-    get_wallets_data, get_wallets_for_mission
+from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress
 from lexicon.lexicon import cryptoSymbol
 
 
-async def get_wallets(func: Type[get_all_name_net_wallets] | Type[get_all_name_net_crypto_wallets]) -> dict[str: str]:
+async def get_wallets(
+        func: Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_crypto_wallets]) -> dict[
+                                                                                                             str: str]:
     """
     Returns all short names of currencies that exist in the database
     :param func: (Type[get_all_name_net_wallets] | Type[get_all_name_net_crypto_wallets])
@@ -63,5 +64,5 @@ async def check_number(input_str: str) -> bool:
 
 
 async def random_wallet(name_net: str) -> WalletAddress:
-    wallets: list[WalletAddress] = await get_wallets_for_mission(name_net=name_net)
+    wallets: list[WalletAddress] = await WalletAPI.get_wallets_for_mission(name_net=name_net)
     return random.choice(wallets)

@@ -3,16 +3,14 @@ from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.tables import WalletAddress
 from factories.factory import UserCallbackFactory
 from filters.filters import IsCryptoAddress, IsDigit
 from keyboard.keyboard_factory import create_fac_menu
 
 from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon, \
-    backLexicon, checkData, getSum, repeatGetSum
+    backLexicon, getSum, repeatGetSum
 from services import logger
 from services.cryptoService import CryptoCheck
-from services.walletService import random_wallet
 from states.states import FSMFiatCrypto
 
 router = Router()

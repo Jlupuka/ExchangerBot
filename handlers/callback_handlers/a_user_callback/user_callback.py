@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 from databaseAPI.commands.submissions_commands import add_application
 from databaseAPI.commands.userCommands.user_commands import select_user
-from databaseAPI.commands.walletAddress_commands import get_all_name_net_crypto_wallets
+from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceMethod, \
@@ -108,7 +108,7 @@ async def waiting_missions_handler(callback: CallbackQuery, callback_data: UserC
 async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(FSMFiatCrypto.currency_to)
-    wallets_dict: dict[str: str] = await get_wallets(func=get_all_name_net_crypto_wallets)
+    wallets_dict: dict[str: str] = await get_wallets(func=WalletAPI.get_all_name_net_crypto_wallets)
     size: tuple[int, ...] = await get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
     await callback.message.edit_text(text=botMessages['choiceToken'],
                                      reply_markup=await create_fac_menu(UserCallbackFactory,
@@ -241,6 +241,7 @@ async def create_mission(callback: CallbackQuery, state: FSMContext) -> None:
     wallet_id: int = state_data['walletId']
     amount_to: float = state_data['amount_to']
     user_obj: Users = await select_user(callback.from_user.id)
+    type_trans = None
     match await state.get_state():
         case FSMFiatCrypto.money_sent:
             type_trans = 'RUB/CRYPTO'

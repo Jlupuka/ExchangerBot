@@ -5,8 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
-from databaseAPI.commands.walletAddress_commands import count_wallets, add_wallet, get_wallets_data, delete_wallet, \
-    get_wallet_data, update_work_type_wallet, update_percent, get_all_name_net_wallets
+from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.commands.submissions_commands import get_all_missions_wait
 from databaseAPI.tables import WalletAddress
 from filters.filters import IsAdmin, IsToken
@@ -50,7 +49,7 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
     if callback_data.page == 'workType':
         admin_work_type = await update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
     count_wait_missions: int = len(await get_all_missions_wait(status='WAIT'))
-    count_wallet: int = await count_wallets()
+    count_wallet: int = await WalletAPI.count_wallets()
     count_admin_work: int = await count_adminsWork()
     buttons: dict[str: str] = settingsMenu.copy()
     buttons['workType'] = workType[not admin_work_type]
@@ -70,7 +69,7 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'wallets'), IsAdmin())
 async def wallets_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
-    wallets_dict: dict[str: str] = await get_wallets(func=get_all_name_net_wallets)
+    wallets_dict: dict[str: str] = await get_wallets(func=WalletAPI.get_all_name_net_wallets)
     wallets_menu: dict[str: str] = walletsMenu.copy()
     if wallets_dict:
         wallets_menu = {**{key: wallets_dict[key] for key in sorted(wallets_dict)}, **wallets_menu}
@@ -146,7 +145,7 @@ async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None
     name_net: str = state_data['currency_to'].upper()
     address: str = state_data['address']
     wallet_type: str = state_data['walletType'].upper()
-    response = await add_wallet(name_net=name_net, address=address, type_wallet=wallet_type)
+    response = await WalletAPI.add_wallet(name_net=name_net, address=address, type_wallet=wallet_type)
     if response is None:
         await callback.message.edit_text(text=successfullyMessage['addWallet'].format(nameNet=name_net,
                                                                                       address=address,
@@ -168,7 +167,7 @@ async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None
 async def print_wallets(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await state.update_data(name_net=callback_data.page)
-    wallets_list: list[tuple[int, str]] = await get_wallets_data(name_net=callback_data.page.upper())
+    wallets_list: list[tuple[int, str]] = await WalletAPI.get_wallets_data(name_net=callback_data.page.upper())
     text, wallets_dict = await preprocess_wallets(wallets=wallets_list)
     await state.update_data(**wallets_dict)
     await callback.message.edit_text(text=text,
@@ -207,7 +206,7 @@ async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallb
 async def delete_address(callback: CallbackQuery, state: FSMContext) -> None:
     state_data = await state.get_data()
     address_id = int(state_data['token'].split('-')[1])
-    await delete_wallet(wallet_id=address_id)
+    await WalletAPI.delete_wallet(wallet_id=address_id)
     await callback.message.edit_text(text=botMessages['deleteAddress'].format(wallet=state_data[state_data['token']]),
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         **addressDelete))
@@ -219,13 +218,13 @@ async def address_edit(callback: CallbackQuery, callback_data: AdminCallbackFact
     await state.set_state(None)
     state_data = await state.get_data()
     wallet_id = int(state_data['token'].split('-')[1])
-    wallet_data: WalletAddress = await get_wallet_data(wallet_id=wallet_id)
+    wallet_data: WalletAddress = await WalletAPI.get_wallet_data(wallet_id=wallet_id)
     status_work = wallet_data.Status
     percent = wallet_data.Percent
     address = wallet_data.Address
     address_edit_copy = addressEdit.copy()
     if callback_data.page == 'statusWork':
-        status_work = await update_work_type_wallet(wallet_id=wallet_id, work_type=not status_work)
+        status_work = await WalletAPI.update_work_type_wallet(wallet_id=wallet_id, work_type=not status_work)
     address_edit_copy['statusWork'] = statusWork[not status_work]
     await callback.message.edit_text(text=botMessages['addressEdit'].format(address=address,
                                                                             percent=percent,
@@ -257,7 +256,7 @@ async def update_percent_wallet(callback: CallbackQuery,
     state_data = await state.get_data()
     wallet_id = int(state_data['token'].split('-')[1])
     percent = state_data['percent']
-    await update_percent(wallet_id=wallet_id, percent=percent)
+    await WalletAPI.update_percent(wallet_id=wallet_id, percent=percent)
     await callback.message.edit_text(text=botMessages['completedEditPercent'].format(percent=percent),
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back=state_data['token'],
