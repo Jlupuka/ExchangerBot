@@ -1,8 +1,10 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.middlewares.request_logging import RequestLogging
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.enums.parse_mode import ParseMode
+from aiogram.methods import GetUpdates
 
 from databaseAPI.tables import *  # Для создания базы данных (да-да...)
 
@@ -39,6 +41,7 @@ async def main() -> None:
 
     # Подключаем мидлвари
     await load_middlewares(dp=dp)
+    bot.session.middleware(RequestLogging(ignore_methods=[GetUpdates]))
 
     logger.info('Starting bot')
 
