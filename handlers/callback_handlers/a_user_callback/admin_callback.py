@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.admin_commands import get_workType, count_adminsWork, update_workType
 from databaseAPI.commands.walletAddress_commands import WalletAPI
-from databaseAPI.commands.submissions_commands import get_all_missions_wait
+from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.tables import WalletAddress
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
@@ -48,7 +48,7 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
     admin_work_type: bool = await get_workType(user_id=callback.from_user.id)
     if callback_data.page == 'workType':
         admin_work_type = await update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
-    count_wait_missions: int = len(await get_all_missions_wait(status='WAIT'))
+    count_wait_missions: int = len(await SubmissionsAPI.get_all_missions_wait(status='WAIT'))
     count_wallet: int = await WalletAPI.count_wallets()
     count_admin_work: int = await count_adminsWork()
     buttons: dict[str: str] = settingsMenu.copy()

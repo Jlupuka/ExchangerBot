@@ -3,7 +3,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.commands.submissions_commands import add_application
+from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.user_commands import select_user
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress, Submissions, Users
@@ -249,11 +249,11 @@ async def create_mission(callback: CallbackQuery, state: FSMContext) -> None:
             type_trans = 'CRYPTO/RUB'
         case FSMCryptoCrypto.money_sent:
             type_trans = 'CRYPTO/CRYPTO'
-    mission_obj: Submissions = await add_application(user_id=user_obj.Id,
-                                                     address_id=wallet_id,
-                                                     amount=amount_to,
-                                                     typeTrans=type_trans,
-                                                     address_user=wallet_requisites)
+    mission_obj: Submissions = await SubmissionsAPI.add_application(user_id=user_obj.Id,
+                                                                    address_id=wallet_id,
+                                                                    amount=amount_to,
+                                                                    typeTrans=type_trans,
+                                                                    address_user=wallet_requisites)
     await callback.message.answer(text=botMessages['createMission'].format(
         mission_id=mission_obj.Id,
         user_requisites=wallet_requisites,
