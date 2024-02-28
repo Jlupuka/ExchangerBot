@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.commands.userCommands.user_commands import select_user
+from databaseAPI.commands.userCommands.user_commands import UserAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
@@ -240,7 +240,7 @@ async def create_mission(callback: CallbackQuery, state: FSMContext) -> None:
     wallet_requisites: str = state_data['user_requisites']
     wallet_id: int = state_data['walletId']
     amount_to: float = state_data['amount_to']
-    user_obj: Users = await select_user(callback.from_user.id)
+    user_obj: Users = await UserAPI.select_user(callback.from_user.id)
     type_trans = None
     match await state.get_state():
         case FSMFiatCrypto.money_sent:

@@ -5,7 +5,7 @@ from services import logger
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
-from databaseAPI.commands.userCommands.user_commands import check_user
+from databaseAPI.commands.userCommands.user_commands import UserAPI
 
 
 class DataBaseCheckUserMiddleware(BaseMiddleware):
@@ -18,6 +18,6 @@ class DataBaseCheckUserMiddleware(BaseMiddleware):
             event: Message,
             data: Dict[str, Any]
     ) -> Any:
-        await check_user(user_id := event.from_user.id)
+        await UserAPI.check_user(user_id := event.from_user.id)
         logger.info(f'User id={user_id}')
         return await handler(event, data)

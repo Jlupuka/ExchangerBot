@@ -2,7 +2,7 @@ from sqlalchemy.engine import ChunkedIteratorResult
 
 from services import logger
 
-from databaseAPI.commands.userCommands.user_commands import select_user
+from databaseAPI.commands.userCommands.user_commands import UserAPI
 
 from sqlalchemy import update, select, func
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -19,7 +19,7 @@ class AdminAPI:
         :param user_id: int
         :return: bool
         """
-        user: Users = await select_user(user_id=user_id)
+        user: Users = await UserAPI.select_user(user_id=user_id)
         return user.Admin
 
     @staticmethod
