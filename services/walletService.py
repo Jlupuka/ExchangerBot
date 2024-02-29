@@ -8,14 +8,15 @@ from lexicon.lexicon import cryptoSymbol
 
 
 async def get_wallets(
-        func: Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_crypto_wallets]) -> dict[
-                                                                                                             str: str]:
+        func: Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_by_type],
+        type_wallet: str = None) -> dict[str: str]:
     """
     Returns all short names of currencies that exist in the database
-    :param func: (Type[get_all_name_net_wallets] | Type[get_all_name_net_crypto_wallets])
+    :param type_wallet: (str) passed if the WalletAPI.get_all_name_net_by_type
+    :param func: (Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_by_type])
     :return: (dict[str]) key is the name in lower case, value - in upper case
     """
-    wallets_data: set[str] = await func()
+    wallets_data: set[str] = await func() if type_wallet is None else await func(type_wallet=type_wallet)
     return {wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}' for wallet in sorted(wallets_data)}
 
 
