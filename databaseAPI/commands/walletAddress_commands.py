@@ -14,10 +14,10 @@ class WalletAPI:
         async with get_session() as session:
             sql: str = func.count(WalletAddress.Id)
             count_chunk: ChunkedIteratorResult = await session.execute(sql)
-            count: int = count if (count := count_chunk.scalar()) else 0
+            count: int = count_chunk.scalar()
             logger.info(f'Number of wallets in the database: {count}')
             return count
-    
+
     @staticmethod
     async def get_all_name_net_wallets() -> set[str]:
         async with get_session() as session:
@@ -116,10 +116,10 @@ class WalletAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_all_name_net_crypto_wallets() -> set[str] | bool:
+    async def get_all_name_net_by_type(type_wallet: str) -> set[str] | bool:
         async with get_session() as session:
             sql: str = select(WalletAddress.NameNet).where(
-                WalletAddress.typeWallet == 'CRYPTO'
+                WalletAddress.typeWallet == type_wallet
             )
             wallet_chunk: ChunkedIteratorResult = await session.execute(sql)
             wallet_scalar = wallet_chunk.scalars().all()
