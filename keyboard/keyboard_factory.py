@@ -78,3 +78,39 @@ async def create_fac_menu(
     else:
         kb_builder.adjust(*[width] * len(kwargs)).as_markup(resize_keyboard=True)
     return kb_builder.as_markup()
+
+
+async def create_fac_mission(callback_factory,
+                             mission_id: int,
+                             back_name: str = 'Назад',
+                             back: bool | str | int = False,
+                             back_page: None | str = None,
+                             sizes: tuple = None,
+                             width: int = 2,
+                             **kwargs):
+    kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
+
+    kb_builder.row(*[
+        InlineKeyboardButton(
+            text=text,
+            callback_data=callback_factory(
+                mission_id=mission_id,
+                back_page=back_page,
+                page=data,
+            ).pack()
+        ) for data, text in kwargs.items()
+    ])
+    if back:
+        kb_builder.add(InlineKeyboardButton(
+            text=back_name,
+            callback_data=callback_factory(
+                mission_id=mission_id,
+                back_page=back_page,
+                page=back,
+            ).pack()
+        ))
+    if sizes:
+        kb_builder.adjust(*sizes).as_markup(resize_keyboard=True)
+    else:
+        kb_builder.adjust(*[width] * len(kwargs)).as_markup(resize_keyboard=True)
+    return kb_builder.as_markup()
