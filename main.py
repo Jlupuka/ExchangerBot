@@ -8,7 +8,7 @@ from aiogram.methods import GetUpdates
 
 from databaseAPI.tables import *  # Для создания базы данных (да-да...)
 
-from services.service import load_router, load_middlewares
+from services.service import LoadService
 
 from config.config import Config, load_config
 from config.mainCommands import load_main_command
@@ -37,10 +37,10 @@ async def main() -> None:
     await load_main_command(logger=logger, bot=bot)
 
     # Подключаем роутеры
-    await load_router(dp=dp)
+    await LoadService.load_router(dp=dp)
 
     # Подключаем мидлвари
-    await load_middlewares(dp=dp)
+    await LoadService.load_middlewares(dp=dp)
     bot.session.middleware(RequestLogging(ignore_methods=[GetUpdates]))
 
     logger.info('Starting bot')
