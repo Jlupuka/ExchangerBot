@@ -11,19 +11,33 @@ from databaseAPI.tables import WalletAddress
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
     checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
-    statusWork, backLexicon
+    statusWork, backLexicon, yesLexicon, sendMission
 
-from keyboard.keyboard_factory import create_fac_menu
-from factories.factory import AdminCallbackFactory
+from keyboard.keyboard_factory import create_fac_menu, create_fac_mission
+from factories.factory import AdminCallbackFactory, MissionCallbackFactory
 
 from services import logger
 from services.walletService import get_wallets, get_size_wallet, preprocess_wallets
-from states.states import FSMAddWallet, FSMPercentEdit
+from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
 
 router: Router = Router()
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'main'), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'main'),
+                       IsAdmin())
+async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.clear()
+    await callback.message.edit_text(
+        text=botMessages['startMessageAdmin'],
+        reply_markup=await create_fac_menu(AdminCallbackFactory,
+                                           sizes=(2, 2),
+                                           back_page=callback_data.page,
+                                           **startCallbackAdmin)
+    )
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'main'),
+                       IsAdmin())
 async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await callback.message.edit_text(
@@ -261,3 +275,43 @@ async def update_percent_wallet(callback: CallbackQuery,
                                      reply_markup=await create_fac_menu(AdminCallbackFactory,
                                                                         back=state_data['token'],
                                                                         back_name=backLexicon['backLexicon']))
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'revoke'), IsAdmin())
+async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory, state: FSMContext) -> None:
+    await state.set_state(FSMRevokeMission.sure)
+    await callback.message.edit_text(text=botMessages['sureRevoke'].format(
+        missionID=callback_data.mission_id
+    ),
+        reply_markup=await create_fac_mission(MissionCallbackFactory,
+                                              mission_id=callback_data.mission_id,
+                                              back=str(callback_data.mission_id),
+                                              back_name=backLexicon['backLexicon'],
+                                              sizes=(2,),
+                                              **yesLexicon))
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin())
+async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFactory,
+                       state: FSMContext) -> None:
+    await state.clear()
+    mission_obj, wallet_obj = await SubmissionsAPI.get_mission(mission_id=callback_data.mission_id)
+    copy_sendMission = sendMission.copy()
+    copy_sendMission['changeStatus'] = sendMission['changeStatus'].format(statusMission=mission_obj.Status)
+    await callback.message.edit_text(text=botMessages['sendMission'].format(
+        currencyTo=wallet_obj.NameNet,
+        missionID=mission_obj.Id,
+        userID=callback.from_user.id,
+        workWallet=wallet_obj.Address,
+        userRequisites=mission_obj.AddressUser,
+        amountFrom=mission_obj.AmountFrom,
+        amountTo=mission_obj.AmountTo,
+        statusMission=mission_obj.Status,
+        dataTime=mission_obj.DateTime
+    ),
+        reply_markup=await create_fac_mission(MissionCallbackFactory,
+                                              mission_id=mission_obj.Id,
+                                              back='main',
+                                              back_name=backLexicon['backMainMenu'],
+                                              sizes=(2, 1),
+                                              **copy_sendMission))
