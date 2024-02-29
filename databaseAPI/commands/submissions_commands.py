@@ -3,6 +3,7 @@ from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
 
 from databaseAPI.database import get_session
+from databaseAPI.tables import WalletAddress
 from databaseAPI.tables.submissionsTable import Submissions
 from databaseAPI.tables.usersTable import Users
 from services import logger
@@ -20,14 +21,16 @@ class SubmissionsAPI:
     @staticmethod
     async def add_application(user_id: int,
                               address_id: int,
-                              amount: int | float,
+                              amount_to: int | float,
+                              amount_from: int | float,
                               typeTrans: str,
                               address_user: str) -> Submissions:
         async with get_session() as session:
             submission_object: Submissions = Submissions(
                 UserId=user_id,
                 AddressId=address_id,
-                Amount=amount,
+                AmountTo=amount_to,
+                AmountFrom=amount_from,
                 TypeTrans=typeTrans,
                 AddressUser=address_user
             )
@@ -68,3 +71,11 @@ class SubmissionsAPI:
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
+
+    @staticmethod
+    async def get_mission(mission_id: int) -> tuple[Submissions, WalletAddress]:
+        async with get_session() as session:
+            sql = select(Submissions, WalletAddress).join(WalletAddress).where(Submissions.Id == mission_id)
+            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
+            mission, wallet = mission_chunk.fetchone()
+            return mission, wallet
