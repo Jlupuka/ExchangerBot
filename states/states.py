@@ -3,6 +3,7 @@ from aiogram.filters.state import State, StatesGroup
 
 class FSMFiatCrypto(StatesGroup):
     currency_to = State()
+    type_fiat = State()
     requisites = State()
     check_validate = State()
     check_validate_sum = State()
@@ -34,3 +35,7 @@ class FSMAddWallet(StatesGroup):
 class FSMPercentEdit(StatesGroup):
     get_percent = State()
     check_percent = State()
+
+
+class FSMRevokeMission(StatesGroup):
+    sure = State()
