@@ -19,7 +19,7 @@ botMessages: dict[str: str] = {
     'statisticTextUser': '''Ваша статистика:''',
     'missionsTextUser': '''Выберите одно из трех состояний заявки, чтобы узнать информацию об этой категории заявок''',
     'informationMissions': 'Для того, чтобы получить информацию о заявке - <b><i>нажмите</i></b> на нее.',
-    'choiceToken': 'Выберите <b><i>криптовалюту</i></b> для осуществления перевода средств🪙',
+    'choiceToken': 'Выберите <b><i>{typeWallet}</i></b> для осуществления перевода средств 🪙',
     'getAddressCrypto': '''Введите адрес Вашего <b><i>криптокошелька</i></b>.
 Если хотите вернуться обратно - нажмите "Назад".
 Если хотите <b><i>отменить</i></b> обмен можете ввести или нажать /cancel''',
@@ -87,7 +87,18 @@ botMessages: dict[str: str] = {
 📝 <i>Номер сделки</i> ⟶ <code>#{mission_id}</code>
 💳 <i>Реквизиты куда придут средства</i> ⟶ <code>{user_requisites}</code>
 💸 <i>Сумма средств, подлежащая зачислению на Ваш кошелек</i> ⟶ <code>{amount} {currency_to}</code></b>
-'''
+''',
+    'sendMission': '''‼️ Заявка на обмен <b><i>{currencyTo}</i></b> ‼️
+🔷 Номер заявки ⟶ <code>#{missionID}</code>
+🆔 UserID ⟶ <code>{userID}</code>
+📥 Куда пришли средства от пользователя ⟶ <code>{workWallet}</code>
+💳 Реквизиты пользователя ⟶ <code>{userRequisites}</code>
+💵 Сумма средств, на зачисление <b><i>Администратору</i></b> ⟶ <code>{amountFrom}</code> <b>RUB</b>
+💶 Сумма средств, на зачисление <b><i>Пользователю</i></b> ⟶ <code>{amountTo}</code> <b>{currencyTo}</b>
+⚜️ Статус заявки ⟶ {statusMission}
+🕰️ Дата оформления заявки ⟶ <code>{dataTime}</code>
+''',
+    'sureRevoke': 'Вы уверены, что хотите удалить заявку #{missionID}?'
 }
 
 errorLexicon: dict[str: str] = {
@@ -122,9 +133,18 @@ startCallbackAdmin: dict[str: str] = {
     'settings': 'Настройки ⚙️',
 }
 
+
+yesLexicon: dict[str: str] = {
+    'yes': 'Да ✅'
+}
+
 profileUser: dict[str: str] = {
     'missions': 'Заявки 📨',
     'statistics': 'Статистика 📊',
+}
+
+repeatLexicon: dict[str: str] = {
+    'repeat': 'Повторить ввод 🔁'
 }
 
 listMissionsUser: dict[str: str] = {
@@ -139,7 +159,7 @@ choiceToken: dict[str: str] = {
 }
 
 checkCorrectAddress: dict[str: dict] = {
-    'yes': 'Да ✅',
+    'yes': yesLexicon['yes'],
     'no': 'Нет ❌'
 }
 
@@ -177,8 +197,8 @@ walletType = {
 }
 
 checkCorrectAddWallet: dict[str: dict] = {
-    'yes': 'Да ✅',
-    'no': 'Повторить заново 🔁'
+    'yes': yesLexicon['yes'],
+    'no': repeatLexicon['repeat']
 }
 
 successfullyMessage: dict[str: str] = {
@@ -196,7 +216,7 @@ addressMenu: dict[str: str] = {
 }
 
 sureLexicon: dict[str: str] = {
-    'yes': 'Да ✅',
+    'yes': yesLexicon['yes'],
     'no': 'Отменить ❌'
 }
 
@@ -221,11 +241,11 @@ backLexicon: dict[str: str] = {
 }
 
 repeatGetPercent: dict[str: str] = {
-    'repeatGetPercent': 'Повторить 🔁'
+    'repeatGetPercent': repeatLexicon['repeat']
 }
 
 checkData: dict[str: str] = {
-    'choiceMethod': 'Да ✅'
+    'choiceMethod': yesLexicon['yes']
 }
 
 cryptoSymbol: dict[str: str] = {
@@ -237,8 +257,8 @@ minSum: dict[str: str] = {
 }
 
 getSum: dict[str: str] = {
-    'getSum': 'Да ✅',
-    'repeatGetSum': 'Повторить ввод 🔁'
+    'getSum': yesLexicon['yes'],
+    'repeatGetSum': repeatLexicon['repeat']
 }
 
 receiptVerification: dict[str: str] = {
@@ -246,5 +266,24 @@ receiptVerification: dict[str: str] = {
 }
 
 repeatGetSum: dict[str: str] = {
-    'repeatGetSum': 'Повторить ввод 🔁'
+    'repeatGetSum': repeatLexicon['repeat']
 }
+
+fiatOrCrypto: dict[str: str] = {
+    'fiat': 'способ оплаты (RUB - карта)',
+    'crypto': 'криптовалюту'
+}
+
+
+sendMission: dict[str: str] = {
+    'changeStatus': 'Изменить статус {statusMission}',
+    'revoke': 'Отменить заявку 🚫',
+    'revokeMessage': 'Отменить с сообщением ⚠️'
+}
+
+
+changeStatus: dict[str: str] = {
+    'WAIT': 'ACCEPTED',
+    'ACCEPTED': 'COMPLETED'
+}
+
