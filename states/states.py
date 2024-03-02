@@ -39,3 +39,4 @@ class FSMPercentEdit(StatesGroup):
 
 class FSMRevokeMission(StatesGroup):
     sure = State()
+    message = State()
