@@ -17,7 +17,8 @@ botMessages: dict[str: str] = {
 Ваш профиль:
 ...''',
     'statisticTextUser': '''Ваша статистика:''',
-    'missionsTextUser': '''Выберите одно из трех состояний заявки, чтобы узнать информацию об этой категории заявок''',
+    'missionsTextUser': '<b>🔶 Просим выбрать одно из трех состояний заявки для получения информации '
+                        'относительно данной категории заявок.</b>',
     'informationMissions': 'Для того, чтобы получить информацию о заявке - <b><i>нажмите</i></b> на нее.',
     'choiceToken': 'Выберите <b><i>{typeWallet}</i></b> для осуществления перевода средств 🪙',
     'getAddressCrypto': '''Введите адрес Вашего <b><i>криптокошелька</i></b>.
@@ -58,7 +59,7 @@ botMessages: dict[str: str] = {
 💳 Реквизиты ⟶ <code>{address}</code>
 💼 Состояние кошелька ⟶ <code>{workType}</code>
 ⚖️ Процент наценки ⟶ <code>{percent}</code>''',
-    'getPercent': '🔶 Вы уверены, что это верный процент - <code>{percent}</code>',
+    'getPercent': '🔶 Вы уверены, что это верный процент - <code>{percent}</code>?',
     'percentEdit': '📝 Напишите процент, который будет стоять на этом кошельке в виде комиссии',
     'completedEditPercent': '''🟢 Процент успешно сохранен! ✅
 <b><i>Новый процент</i></b>: <code>{percent}</code>''',
@@ -91,14 +92,34 @@ botMessages: dict[str: str] = {
     'sendMission': '''‼️ Заявка на обмен <b><i>{currencyTo}</i></b> ‼️
 🔷 Номер заявки ⟶ <code>#{missionID}</code>
 🆔 UserID ⟶ <code>{userID}</code>
+🆔 AdminID ⟶ <code>{adminID}</code>
 📥 Куда пришли средства от пользователя ⟶ <code>{workWallet}</code>
 💳 Реквизиты пользователя ⟶ <code>{userRequisites}</code>
-💵 Сумма средств, на зачисление <b><i>Администратору</i></b> ⟶ <code>{amountFrom}</code> <b>RUB</b>
+💵 Сумма средств, на зачисление <b><i>Администратору</i></b> ⟶ <code>{amountFrom}</code> <b>{NameNet}</b>
 💶 Сумма средств, на зачисление <b><i>Пользователю</i></b> ⟶ <code>{amountTo}</code> <b>{currencyTo}</b>
-⚜️ Статус заявки ⟶ {statusMission}
+⚜️ Статус заявки ⟶ <code>{statusMission}</code>
 🕰️ Дата оформления заявки ⟶ <code>{dataTime}</code>
 ''',
-    'sureRevoke': 'Вы уверены, что хотите удалить заявку #{missionID}?'
+    'sureRevoke': '🔶 Вы уверены, что хотите удалить заявку <code>#{missionID}</code>?',
+    'changeStatus': '🟣 Нынешний статус заявки <code>#{missionID}</code> ⟶ <i><b>{statusMission}</b></i>',
+    'changeStatusUser': '🟦 Ваша заявка <code>#{missionID}</code> сменила статус на <b><i>{statusMission}</i></b>',
+    'informationMissionUser': '''Информация по заявке <code>#{missionID}</code>
+🆔 AdminID ⟶ <code>{adminID}</code>
+📥 Ваши реквизиты ⟶ <code>{userRequisites}</code>
+💳 Реквизиты Администратора ⟶ <code>{workWallet}</code>
+💵 Сумма средств, на зачисление <b><i>Администратору</i></b> ⟶ <code>{amountFrom}</code> <b>{NameNet}</b>
+💶 Сумма средств, на зачисление <b><i>Вам</i></b> ⟶ <code>{amountTo}</code> <b>{currencyTo}</b>
+⚜️ Статус заявки ⟶ <code>{statusMission}</code>
+🕰️ Дата оформления заявки ⟶ <code>{dataTime}</code>
+''',
+    'sureRevokeWithMessage': '''🔶 Вы уверены, что хотите удалить заявку <code>#{missionID}</code>?
+Сообщение Пользователю ⟶ <b><i>{messageRevoke}</i></b>''',
+    'revokeSimpleA': '✅ Заявка успешно отменена!',
+    'revokeWithTextA': '✅ Заявка успешно отменена!\nСообщение пользователю ⟶ <b><i>{messageRevoke}</i></b>',
+    'revokeSimpleU': '❌ Ваша заявка <code>#{missionID}</code> отменена Администратором!',
+    'revokeWithTextU': '❌ Ваша заявка <code>#{missionID}</code> отменена Администратором!\n'
+                       'Сообщение от Администратора ⟶ <b><i>{messageRevoke}</i></b>',
+    'getMessageToRevoke': '<b>🟣 Введите сообщение, которое будет отправлено Пользователю.</b>'
 }
 
 errorLexicon: dict[str: str] = {
@@ -115,7 +136,11 @@ errorLexicon: dict[str: str] = {
     'IsDigit': '''🔴 <b>ОШИБКА</b> 🔴
 Не верное сообщение, не является числом - <code>{digit}</code>''',
     'getSum_minimal': '''🔴 <b>ОШИБКА</b> 🔴 
-<code>{amount}</code> <b>{currency_from}</b> - меньше допустимого значения.'''
+<code>{amount}</code> <b>{currency_from}</b> - меньше допустимого значения.''',
+    'anotherAdminTakeMiss': '''🔴 <b>ОШИБКА</b> 🔴 
+<i>Другой администратор уже взял эту заявку!</i>''',
+    'errorMission': '''<b>🔴 ОШИБКА 🔴
+<i>В этой категории нет еще заявок!</i></b>'''
 }
 
 startCallbackUser: dict[str: str] = {
@@ -133,6 +158,9 @@ startCallbackAdmin: dict[str: str] = {
     'settings': 'Настройки ⚙️',
 }
 
+checkMark: dict[str: str] = {
+    'yes': '✅'
+}
 
 yesLexicon: dict[str: str] = {
     'yes': 'Да ✅'
@@ -147,10 +175,10 @@ repeatLexicon: dict[str: str] = {
     'repeat': 'Повторить ввод 🔁'
 }
 
-listMissionsUser: dict[str: str] = {
-    'accepted': 'Принятые 🟣',
-    'completed': 'Завершенные ✅',
-    'waiting': 'В ожидание 🕜'
+listMissions: dict[str: str] = {
+    'wait': 'В ожидание 🕜',
+    'accepted': 'Принятые 📝',
+    'completed': 'Завершенные ✅'
 }
 
 choiceToken: dict[str: str] = {
@@ -159,7 +187,7 @@ choiceToken: dict[str: str] = {
 }
 
 checkCorrectAddress: dict[str: dict] = {
-    'yes': yesLexicon['yes'],
+    'choiceGetSum': yesLexicon['yes'],
     'no': 'Нет ❌'
 }
 
@@ -237,15 +265,16 @@ statusWork: dict[str: str] = {
 backLexicon: dict[str: str] = {
     'cancelLexicon': 'Отменить 🔚',
     'backLexicon': 'Вернуться 🔚',
-    'backMainMenu': 'Главное меню 🔚'
+    'backMainMenu': 'Главное меню 🔚',
+    'backMission': 'Вернуться к заявкам 🔚'
 }
 
 repeatGetPercent: dict[str: str] = {
     'repeatGetPercent': repeatLexicon['repeat']
 }
 
-checkData: dict[str: str] = {
-    'choiceMethod': yesLexicon['yes']
+checkPercent: dict[str: str] = {
+    'checkPercent': yesLexicon['yes']
 }
 
 cryptoSymbol: dict[str: str] = {
@@ -274,16 +303,22 @@ fiatOrCrypto: dict[str: str] = {
     'crypto': 'криптовалюту'
 }
 
-
 sendMission: dict[str: str] = {
-    'changeStatus': 'Изменить статус {statusMission}',
+    'changeStatus': 'Изменить статус 📌',
     'revoke': 'Отменить заявку 🚫',
-    'revokeMessage': 'Отменить с сообщением ⚠️'
+    'revokeWithMessage': 'Отменить с сообщением ⚠️'
 }
-
 
 changeStatus: dict[str: str] = {
-    'WAIT': 'ACCEPTED',
-    'ACCEPTED': 'COMPLETED'
+    'wait': 'wait 🕜',
+    'accepted': 'accepted 📝',
+    'completed': 'completed 🏷️'
 }
 
+informationMissionUser: dict[str: str] = {
+    'information': '📜 Информация'
+}
+
+revokeMission: dict[str: str] = {
+    'YesRevokeMission': yesLexicon['yes']
+}
