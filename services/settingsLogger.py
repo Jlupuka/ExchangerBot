@@ -32,6 +32,14 @@ formatter = ColoredFormatter()
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 
+reader_handler = logging.FileHandler(f"{__name__}.log", mode='w')
+reader_formatter = logging.Formatter("%(asctime)s  | #%(levelname)s |"
+                                     " %(filename)s:%(funcName)s:%(lineno)s | - %(name)s - | %(message)s")
+reader_handler.setFormatter(reader_formatter)
+
 logger = logging.getLogger()
+
 logger.addHandler(handler)
+logger.addHandler(reader_handler)
+
 logger.setLevel(logging.DEBUG)
