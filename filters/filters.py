@@ -8,7 +8,7 @@ from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck, min_sum
-from services.walletService import check_number
+from services.walletService import WalletService
 
 
 class IsAdmin(BaseFilter):
@@ -98,7 +98,7 @@ class IsDigit(BaseFilter):
         :param state: (aiogram.fsm.context.FSMContext) State machine
         :return: The result on what is or is not
         """
-        is_number = await check_number(input_str=message.text)
+        is_number = await WalletService.check_number(input_str=message.text)
         if is_number:
             if self.check_min is False:
                 return is_number
