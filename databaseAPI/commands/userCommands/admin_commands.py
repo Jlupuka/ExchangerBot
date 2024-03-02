@@ -83,3 +83,14 @@ class AdminAPI:
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
+
+    @staticmethod
+    async def select_all_admins() -> list[Users] | None:
+        async with get_session() as session:
+            sql: str = select(Users).where(
+                Users.Admin == True,
+                Users.WorkType == True
+            )
+            admins_chunk: ChunkedIteratorResult = await session.execute(sql)
+            admins: list[Users] = admins_chunk.scalars().all()
+            return admins if admins else None
