@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, update, delete
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
 
@@ -23,6 +23,7 @@ class SubmissionsAPI:
                               address_id: int,
                               amount_to: int | float,
                               amount_from: int | float,
+                              currency_to: str,
                               typeTrans: str,
                               address_user: str) -> Submissions:
         async with get_session() as session:
@@ -31,6 +32,7 @@ class SubmissionsAPI:
                 AddressId=address_id,
                 AmountTo=amount_to,
                 AmountFrom=amount_from,
+                CurrencyTo=currency_to,
                 TypeTrans=typeTrans,
                 AddressUser=address_user
             )
@@ -43,23 +45,17 @@ class SubmissionsAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_all_missions_wait(status: str = 'WAIT', offset: int = 0) -> list[Submissions]:
+    async def get_count_missions_by_status(mission_status: str) -> int:
         async with get_session() as session:
-            if not offset:
-                sql = select(Submissions).where(
-                    Submissions.Status == status
-                )
-            else:
-                sql = select(Submissions).where(
-                    Submissions.Status == status
-                ).limit(8).offset(offset * 8)
-            result: ChunkedIteratorResult = await session.execute(sql)
-            return result.scalars().all()
+            sql: str = select(func.count(Submissions.Id)).where(
+                       Submissions.Status == mission_status)
+            count_chunk: ChunkedIteratorResult = await session.execute(sql)
+            return count_chunk.scalar()
 
     @staticmethod
-    async def update_mission_accepted(submission_id: int, status: str) -> None:
+    async def update_mission_status(submission_id: int, status: str) -> None:
         async with get_session() as session:
-            sql = update(Submissions).where(
+            sql: str = update(Submissions).where(
                 Submissions.Id == submission_id
             ).values(
                 Status=status
@@ -73,9 +69,53 @@ class SubmissionsAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_mission(mission_id: int) -> tuple[Submissions, WalletAddress]:
+    async def get_mission_data(mission_id: int) -> tuple[Submissions, WalletAddress, Users]:
         async with get_session() as session:
-            sql = select(Submissions, WalletAddress).join(WalletAddress).where(Submissions.Id == mission_id)
+            sql: str = select(Submissions, WalletAddress, Users).join(WalletAddress).join(Users).where(
+                Submissions.Id == mission_id)
             mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            mission, wallet = mission_chunk.fetchone()
-            return mission, wallet
+            mission, wallet, user = mission_chunk.fetchone()
+            return mission, wallet, user
+
+    @staticmethod
+    async def get_missions_by_status(mission_status: str, offset: int = 0,
+                                     pagination: bool = False) -> list[Submissions]:
+        async with get_session() as session:
+            if pagination:
+                sql: str = select(Submissions).where(
+                    Submissions.Status == mission_status).limit(8).offset(offset * 8)
+            else:
+                sql = select(Submissions).where(
+                    Submissions.Status == mission_status)
+            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
+            return mission_chunk.scalars().all()
+
+    @staticmethod
+    async def update_admin_id(submission_id: int, admin_id: int | None) -> None:
+        async with get_session() as session:
+            sql: str = update(Submissions).where(
+                Submissions.Id == submission_id
+            ).values(
+                AdminId=admin_id
+            )
+            try:
+                await session.execute(sql)
+                await session.commit()
+                return None
+            except IntegrityError as IE:
+                logger.error(f"Indentation error in function '{__name__}': {IE}")
+                await session.rollback()
+
+    @staticmethod
+    async def delete_mission_by_id(mission_id: int) -> None:
+        async with get_session() as session:
+            sql: str = delete(Submissions).where(
+                Submissions.Id == mission_id
+            )
+            try:
+                await session.execute(sql)
+                await session.commit()
+                return None
+            except IntegrityError as IE:
+                logger.error(f"Indentation error in function '{__name__}': {IE}")
+                await session.rollback()
