@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 from factories.factory import UserCallbackFactory
 from filters.filters import IsCryptoAddress, IsDigit
-from keyboard.keyboard_factory import create_fac_menu
+from keyboard.keyboard_factory import Factories
 
 from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon, \
     backLexicon, getSum, repeatGetSum
@@ -21,9 +21,9 @@ async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         text=botMessages['startMessageAdmin'],
-        reply_markup=await create_fac_menu(UserCallbackFactory,
-                                           back_page='main',
-                                           sizes=(2, 1, 2), **startCallbackUser)
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back_page='main',
+                                                     sizes=(2, 1, 2), **startCallbackUser)
     )
 
 
@@ -35,12 +35,12 @@ async def add_mission(message: Message, state: FSMContext) -> None:
     logger.debug(state_data)
     await message.answer(text=botMessages['checkCorrectAddress'].format(net=state_data['currency_to'].upper(),
                                                                         wallet_address=message.text),
-                         reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                            back='main',
-                                                            back_name=backLexicon['cancelLexicon'],
-                                                            sizes=(2, 1),
-                                                            **checkCorrectAddress
-                                                            ))
+                         reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                      back='main',
+                                                                      back_name=backLexicon['cancelLexicon'],
+                                                                      sizes=(2, 1),
+                                                                      **checkCorrectAddress
+                                                                      ))
 
 
 @router.message(StateFilter(FSMFiatCrypto.requisites))
@@ -50,11 +50,11 @@ async def error_address(message: Message, state: FSMContext) -> None:
     logger.debug(state_data)
     await message.answer(text=errorLexicon['errorAddress'].format(net=state_data['currency_to'],
                                                                   wallet_address=message.text),
-                         reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                            back='main',
-                                                            back_name=backLexicon['cancelLexicon'],
-                                                            **repeatAddress
-                                                            ))
+                         reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                      back='main',
+                                                                      back_name=backLexicon['cancelLexicon'],
+                                                                      **repeatAddress
+                                                                      ))
 
 
 @router.message(StateFilter(FSMFiatCrypto.get_sum), IsDigit(check_min=True))
@@ -76,11 +76,11 @@ async def check_the_correct_transaction(message: Message, state: FSMContext) -> 
         currency_to=state_data['currency_to'].upper(),
         amount_to=amount_to
     )
-    await message.answer(text=text, reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                       sizes=(2,),
-                                                                       back='main',
-                                                                       back_name=backLexicon['cancelLexicon'],
-                                                                       **getSum))
+    await message.answer(text=text, reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                 sizes=(2,),
+                                                                                 back='main',
+                                                                                 back_name=backLexicon['cancelLexicon'],
+                                                                                 **getSum))
 
 
 @router.message(StateFilter(FSMFiatCrypto.get_sum), IsDigit(check_min=False))
@@ -89,17 +89,17 @@ async def failed_the_minimum_test(message: Message, state: FSMContext) -> None:
     state_data: dict[str: str] = await state.get_data()
     await message.answer(text=errorLexicon['getSum_minimal'].format(amount=message.text,
                                                                     currency_from=state_data['currency_from']),
-                         reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                            back='main',
-                                                            back_name=backLexicon['cancelLexicon'],
-                                                            **repeatGetSum))
+                         reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                      back='main',
+                                                                      back_name=backLexicon['cancelLexicon'],
+                                                                      **repeatGetSum))
 
 
 @router.message(StateFilter(FSMFiatCrypto.get_sum))
 async def failed_the_digit_test(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMFiatCrypto.check_validate_sum)
     await message.answer(text=errorLexicon['IsDigit'].format(digit=message.text),
-                         reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                            back='main',
-                                                            back_name=backLexicon['cancelLexicon'],
-                                                            **repeatGetSum))
+                         reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                      back='main',
+                                                                      back_name=backLexicon['cancelLexicon'],
+                                                                      **repeatGetSum))
