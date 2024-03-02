@@ -8,10 +8,10 @@ from databaseAPI.commands.userCommands.user_commands import UserAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
-from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissionsUser, choiceMethod, \
-    backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission
+from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissions, choiceMethod, \
+    backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus
 
-from keyboard.keyboard_factory import create_fac_menu, create_fac_mission
+from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
 
 from magic_filter import F
@@ -19,21 +19,22 @@ from magic_filter import F
 from services import logger
 from services.cryptoService import CryptoCheck, min_sum
 from services.userService import UserService
-from services.walletService import get_wallets, get_size_wallet, random_wallet
+from services.walletService import WalletService
 from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto
 
 router: Router = Router()
 
 
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'main'))
 @router.callback_query(UserCallbackFactory.filter(F.page == 'main'))
 async def main_handler(callback: CallbackQuery, state: FSMContext, callback_data: UserCallbackFactory) -> None:
     await state.clear()
     await callback.message.edit_text(
         text=botMessages['startMessageUser'],
-        reply_markup=await create_fac_menu(UserCallbackFactory,
-                                           back_page=callback_data.page,
-                                           sizes=(2, 1, 2),
-                                           **startCallbackUser)
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back_page=callback_data.page,
+                                                     sizes=(2, 1, 2),
+                                                     **startCallbackUser)
     )
 
 
@@ -46,28 +47,28 @@ async def info_handler(callback: CallbackQuery) -> None:
 @router.callback_query(UserCallbackFactory.filter(F.page == 'profile'))
 async def profile_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['profileTextUser'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page=callback_data.page,
-                                                                        back='main',
-                                                                        sizes=(2,), **profileUser))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='main',
+                                                                                  sizes=(2,), **profileUser))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'statistics'))
 async def statistics_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['statisticTextUser'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page='main',
-                                                                        back=callback_data.back_page))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page='main',
+                                                                                  back=callback_data.back_page))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'missions'))
 async def missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['missionsTextUser'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page=callback_data.page,
-                                                                        back='profile',
-                                                                        sizes=(3,),
-                                                                        **listMissionsUser))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='profile',
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'accepted'))
@@ -75,11 +76,11 @@ async def accepted_missions_handler(callback: CallbackQuery, callback_data: User
     # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
     #  данных под бота тг
     await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page='missions',
-                                                                        back=callback_data.back_page,
-                                                                        sizes=(3,),
-                                                                        **listMissionsUser))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page='missions',
+                                                                                  back=callback_data.back_page,
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'completed'))
@@ -87,37 +88,38 @@ async def completed_missions_handler(callback: CallbackQuery, callback_data: Use
     # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
     #  данных под бота тг
     await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page='missions',
-                                                                        back=callback_data.back_page,
-                                                                        sizes=(3,),
-                                                                        **listMissionsUser))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page='missions',
+                                                                                  back=callback_data.back_page,
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
 
 
-@router.callback_query(UserCallbackFactory.filter(F.page == 'waiting'))
+@router.callback_query(UserCallbackFactory.filter(F.page == 'wait'))
 async def waiting_missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
     # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
     #  данных под бота тг
     await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page='missions',
-                                                                        back=callback_data.back_page,
-                                                                        sizes=(3,),
-                                                                        **listMissionsUser))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page='missions',
+                                                                                  back=callback_data.back_page,
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'rub-crypto'))
 async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(FSMFiatCrypto.currency_to)
-    wallets_dict: dict[str: str] = await get_wallets(func=WalletAPI.get_all_name_net_by_type, type_wallet='CRYPTO')
-    size: tuple[int, ...] = await get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
+    wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
+                                                                   type_wallet='CRYPTO')
+    size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
     await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto['crypto']),
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page=callback_data.page,
-                                                                        back=callback_data.back_page,
-                                                                        sizes=size,
-                                                                        **wallets_dict))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back=callback_data.back_page,
+                                                                                  sizes=size,
+                                                                                  **wallets_dict))
 
 
 @router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory),
@@ -127,9 +129,9 @@ async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory
     logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back=callback_data.back_page,
-                                                                        back_page='main'))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back=callback_data.back_page,
+                                                                                  back_page='main'))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'repeat', 'no'})),
@@ -138,37 +140,42 @@ async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> None:
     logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back='rub-crypto',
-                                                                        back_page='main'))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back='rub-crypto',
+                                                                                  back_page='main'))
 
 
-@router.callback_query(UserCallbackFactory.filter(F.page == 'yes'),
-                       StateFilter(FSMFiatCrypto.check_validate, FSMFiatCrypto.get_sum))
+@router.callback_query(UserCallbackFactory.filter(F.page == 'choiceGetSum'),
+                       StateFilter(FSMFiatCrypto.check_validate, FSMFiatCrypto.method))
 async def choice_method_get_sum(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.set_state(FSMFiatCrypto.type_fiat)
-    wallets_dict: dict[str: str] = await get_wallets(func=WalletAPI.get_all_name_net_by_type, type_wallet='RUB')
-    size: tuple[int, ...] = await get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
+    wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
+                                                                   type_wallet='RUB')
+    size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
     await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto['fiat']),
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back_page=callback_data.page,
-                                                                        back='main',
-                                                                        sizes=size,
-                                                                        **wallets_dict))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='main',
+                                                                                  back_name=backLexicon[
+                                                                                      'cancelLexicon'],
+                                                                                  sizes=size,
+                                                                                  **wallets_dict))
 
 
-@router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory), StateFilter(FSMFiatCrypto.type_fiat))
+@router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory),
+                       StateFilter(FSMFiatCrypto.type_fiat, FSMFiatCrypto.get_sum))
 async def save_type_fiat_transaction(callback: CallbackQuery,
                                      callback_data: UserCallbackFactory,
                                      state: FSMContext) -> None:
     await state.set_state(FSMFiatCrypto.method)
     await state.update_data(typeFiat=callback_data.page.upper())
     await callback.message.edit_text(text=botMessages['choiceMethod'],
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back='main',
-                                                                        sizes=(3, 1),
-                                                                        back_name=backLexicon['cancelLexicon'],
-                                                                        **choiceMethod))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back='choiceGetSum',
+                                                                                  back_page=callback_data.page,
+                                                                                  sizes=(3, 1),
+                                                                                  back_name=backLexicon['backLexicon'],
+                                                                                  **choiceMethod))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'rub', 'usd', 'repeatGetSum'})),
@@ -179,7 +186,7 @@ async def rub_usd_method(callback: CallbackQuery, callback_data: UserCallbackFac
     await state.set_state(FSMFiatCrypto.get_sum)
     state_data: dict[str: str] = await state.get_data()
     minimal_amount = min_sum
-    work_wallet: WalletAddress = await random_wallet(name_net=state_data['typeFiat'])
+    work_wallet: WalletAddress = await WalletService.random_wallet(name_net=state_data['typeFiat'])
     if state_data['currency_from'] != 'RUB':
         minimal_amount = await CryptoCheck.minimal_summa(minSum=min_sum,
                                                          currency_to=state_data['currency_to'],
@@ -194,9 +201,11 @@ async def rub_usd_method(callback: CallbackQuery, callback_data: UserCallbackFac
                                                                        currency_from=state_data['currency_from'],
                                                                        currency_to=state_data['currency_to'],
                                                                        currency_rate=currency_rate),
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back='yes',
-                                                                        **minSum))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back_name=backLexicon['backLexicon'],
+                                                                                  back=state_data['typeFiat'],
+                                                                                  **minSum))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'minSum'), StateFilter(FSMFiatCrypto.get_sum))
@@ -224,11 +233,12 @@ async def check_the_correct_transaction(callback: CallbackQuery, state: FSMConte
         amount_to=amount_to
     )
     await callback.message.edit_text(text=text,
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        sizes=(2,),
-                                                                        back='main',
-                                                                        back_name=backLexicon['cancelLexicon'],
-                                                                        **getSum))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  sizes=(2,),
+                                                                                  back='main',
+                                                                                  back_name=backLexicon[
+                                                                                      'cancelLexicon'],
+                                                                                  **getSum))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'getSum'), StateFilter(FSMFiatCrypto.check_validate_sum))
@@ -247,16 +257,18 @@ async def receipt_verification(callback: CallbackQuery, state: FSMContext) -> No
         work_wallet=state_data['work_walletRequisites']
     )
     await callback.message.edit_text(text=text,
-                                     reply_markup=await create_fac_menu(UserCallbackFactory,
-                                                                        back='main',
-                                                                        back_name=backLexicon['cancelLexicon'],
-                                                                        **receiptVerification))
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back='main',
+                                                                                  back_name=backLexicon[
+                                                                                      'cancelLexicon'],
+                                                                                  **receiptVerification))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'sent'), StateFilter(FSMFiatCrypto.money_sent))
 async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -> None:
     state_data: dict[str: str] = await state.get_data()
     currency_to: str = state_data['currency_to']
+    currency_from: str = state_data['currency_from']
     wallet_requisites: str = state_data['user_requisites']
     wallet_id: int = state_data['walletId']
     amount_to: float = state_data['amount_to']
@@ -274,6 +286,7 @@ async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -
             type_trans = 'CRYPTO/CRYPTO'
     mission_obj: Submissions = await SubmissionsAPI.add_application(user_id=user_obj.Id,
                                                                     address_id=wallet_id,
+                                                                    currency_to=currency_to,
                                                                     amount_to=amount_to,
                                                                     amount_from=amount_from,
                                                                     typeTrans=type_trans,
@@ -284,9 +297,9 @@ async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -
         amount=amount_to,
         currency_to=currency_to
     ),
-        reply_markup=await create_fac_menu(UserCallbackFactory,
-                                           back='main',
-                                           back_name=backLexicon['backMainMenu']))
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back='main',
+                                                     back_name=backLexicon['backMainMenu']))
     if admin_obj:
         copy_sendMission = sendMission.copy()
         copy_sendMission['changeStatus'] = sendMission['changeStatus'].format(
@@ -296,18 +309,42 @@ async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -
                                text=botMessages['sendMission'].format(
                                    currencyTo=currency_to,
                                    missionID=mission_obj.Id,
+                                   adminID=mission_obj.AdminId,
                                    userID=callback.from_user.id,
                                    workWallet=work_wallet,
                                    userRequisites=wallet_requisites,
                                    amountFrom=amount_from,
+                                   NameNet=currency_from,
                                    amountTo=amount_to,
-                                   statusMission=mission_obj.Status,
+                                   statusMission=changeStatus[mission_obj.Status.lower()].upper(),
                                    dataTime=mission_obj.DateTime
                                ),
-                               reply_markup=await create_fac_mission(MissionCallbackFactory,
-                                                                     mission_id=mission_obj.Id,
-                                                                     back='main',
-                                                                     back_name=backLexicon['backMainMenu'],
-                                                                     sizes=(2, 1),
-                                                                     **copy_sendMission))
+                               reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                               mission_id=mission_obj.Id,
+                                                                               back='main',
+                                                                               back_name=backLexicon['backMainMenu'],
+                                                                               sizes=(2, 1),
+                                                                               **copy_sendMission))
     await state.clear()
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'information'))
+async def information_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory) -> None:
+    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    await callback.message.edit_text(text=botMessages['informationMissionUser'].format(
+        missionID=mission_obj.Id,
+        adminID=mission_obj.AdminId,
+        userRequisites=mission_obj.AddressUser,
+        workWallet=wallet_obj.Address,
+        amountFrom=mission_obj.AmountFrom,
+        NameNet=wallet_obj.NameNet,
+        amountTo=mission_obj.AmountTo,
+        currencyTo=mission_obj.CurrencyTo,
+        statusMission=changeStatus[mission_obj.Status.lower()].upper(),
+        dataTime=mission_obj.DateTime,
+    ),
+        reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                        mission_id=callback_data.mission_id,
+                                                        back='main',
+                                                        back_name=backLexicon['backMainMenu'],
+                                                        sizes=(1, 1)))
