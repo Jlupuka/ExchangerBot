@@ -1,4 +1,4 @@
-from aiogram import Router
+from aiogram import Router, Bot, exceptions
 from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -7,45 +7,34 @@ from aiogram.types import CallbackQuery
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.tables import WalletAddress
+from databaseAPI.tables import WalletAddress, Submissions
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
     checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
-    statusWork, backLexicon, yesLexicon, sendMission
+    statusWork, backLexicon, sendMission, changeStatus, checkMark, informationMissionUser, listMissions, \
+    revokeMission
 
-from keyboard.keyboard_factory import create_fac_menu, create_fac_mission
-from factories.factory import AdminCallbackFactory, MissionCallbackFactory
+from keyboard.keyboard_factory import Factories
+from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory
 
 from services import logger
-from services.walletService import get_wallets, get_size_wallet, preprocess_wallets
+from services.submissionService import SubmissionService
+from services.walletService import WalletService
 from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
 
 router: Router = Router()
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'main'),
-                       IsAdmin())
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'main'), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'main'), IsAdmin())
 async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await callback.message.edit_text(
         text=botMessages['startMessageAdmin'],
-        reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                           sizes=(2, 2),
-                                           back_page=callback_data.page,
-                                           **startCallbackAdmin)
-    )
-
-
-@router.callback_query(MissionCallbackFactory.filter(F.page == 'main'),
-                       IsAdmin())
-async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
-    await state.clear()
-    await callback.message.edit_text(
-        text=botMessages['startMessageAdmin'],
-        reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                           sizes=(2, 2),
-                                           back_page=callback_data.page,
-                                           **startCallbackAdmin)
+        reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                     sizes=(2, 2),
+                                                     back_page=callback_data.page,
+                                                     **startCallbackAdmin)
     )
 
 
@@ -53,8 +42,8 @@ async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallb
 async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
     logger.info(callback_data)
     await callback.message.edit_text(text=botMessages['statisticTextUser'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=callback_data.back_page))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=callback_data.back_page))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'settings', 'workType'})), IsAdmin())
@@ -62,7 +51,7 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
     admin_work_type: bool = await AdminAPI.get_workType(user_id=callback.from_user.id)
     if callback_data.page == 'workType':
         admin_work_type = await AdminAPI.update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
-    count_wait_missions: int = len(await SubmissionsAPI.get_all_missions_wait(status='WAIT'))
+    count_wait_missions: int = len(await SubmissionsAPI.get_missions_by_status(mission_status='WAIT'))
     count_wallet: int = await WalletAPI.count_wallets()
     count_admin_work: int = await AdminAPI.count_adminsWork()
     buttons: dict[str: str] = settingsMenu.copy()
@@ -73,47 +62,41 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
                                                                              countMissions=count_wait_missions,
                                                                              countWallets=count_wallet,
                                                                              adminsWork=count_admin_work),
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back_page=callback_data.back_page,
-                                                                        back='main',
-                                                                        sizes=(1, 2, 1) if admin_work_type else (2, 1),
-                                                                        **buttons))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back_page=callback_data.back_page,
+                                                                                  back='main',
+                                                                                  sizes=(1, 2, 1)
+                                                                                  if admin_work_type
+                                                                                  else (2, 1),
+                                                                                  **buttons))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'wallets'), IsAdmin())
 async def wallets_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
-    wallets_dict: dict[str: str] = await get_wallets(func=WalletAPI.get_all_name_net_wallets)
+    wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_wallets)
     wallets_menu: dict[str: str] = walletsMenu.copy()
     if wallets_dict:
         wallets_menu = {**{key: wallets_dict[key] for key in sorted(wallets_dict)}, **wallets_menu}
-    size: tuple[int, ...] = await get_size_wallet(len_wallet=len_wallet, count_any_button=2) if (len_wallet :=
-                                                                                                 len(wallets_dict)
-                                                                                                 ) > 1 else (1, 1, 1)
+    size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len_wallet,
+                                                                count_any_button=2) \
+        if (len_wallet := len(wallets_dict)) > 1 else (1, 1, 1)
     await callback.message.edit_text(text=botMessages['walletsMenu'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back_page=callback_data.page,
-                                                                        back='settings',
-                                                                        sizes=size,
-                                                                        **wallets_menu))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='settings',
+                                                                                  sizes=size,
+                                                                                  **wallets_menu))
 
 
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'no'), StateFilter(FSMAddWallet.type_wallet), IsAdmin())
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'addWallet'), IsAdmin())
 async def add_wallet_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(text=botMessages['addWallet'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=callback_data.back_page))
-
-
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'no'), StateFilter(FSMAddWallet.type_wallet), IsAdmin())
-async def repeat_add_wallet(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
-    await state.clear()
-    await state.set_state(FSMAddWallet.currency_to)
-    await callback.message.edit_text(text=botMessages['addWallet'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=callback_data.back_page))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=callback_data.back_page))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'repeat'), IsAdmin())
@@ -127,9 +110,9 @@ async def repeat_get_crypto_address(callback: CallbackQuery, state: FSMContext) 
         text: str = botMessages['addWallet']
         await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(text=text,
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back='wallets',
-                                                                        back_name=backLexicon['backLexicon']))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back='wallets',
+                                                                                  back_name=backLexicon['backLexicon']))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'crypto', 'rub'})),
@@ -146,11 +129,11 @@ async def check_add_wallet_data(callback: CallbackQuery, callback_data: AdminCal
     await callback.message.edit_text(text=botMessages['checkDataAddWallet'].format(nameNet=name_net,
                                                                                    address=address,
                                                                                    walletType=wallet_type),
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back='wallets',
-                                                                        back_name=backLexicon['backLexicon'],
-                                                                        sizes=(2, 1),
-                                                                        **checkCorrectAddWallet))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back='wallets',
+                                                                                  back_name=backLexicon['backLexicon'],
+                                                                                  sizes=(2, 1),
+                                                                                  **checkCorrectAddWallet))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), StateFilter(FSMAddWallet.check_correct), IsAdmin())
@@ -164,16 +147,18 @@ async def add_wallet_handler(callback: CallbackQuery, state: FSMContext) -> None
         await callback.message.edit_text(text=successfullyMessage['addWallet'].format(nameNet=name_net,
                                                                                       address=address,
                                                                                       walletType=wallet_type),
-                                         reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                            back='wallets',
-                                                                            back_name=backLexicon['backLexicon']))
+                                         reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                      back='wallets',
+                                                                                      back_name=backLexicon[
+                                                                                          'backLexicon']))
     else:
         await callback.message.edit_text(text=errorLexicon['WalletExist'].format(nameNet=name_net,
                                                                                  address=address,
                                                                                  walletType=wallet_type),
-                                         reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                            back='wallets',
-                                                                            back_name=backLexicon['backLexicon']))
+                                         reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                      back='wallets',
+                                                                                      back_name=backLexicon[
+                                                                                          'backLexicon']))
     await state.clear()
 
 
@@ -182,28 +167,29 @@ async def print_wallets(callback: CallbackQuery, callback_data: AdminCallbackFac
     await state.clear()
     await state.update_data(name_net=callback_data.page)
     wallets_list: list[tuple[int, str]] = await WalletAPI.get_wallets_data(name_net=callback_data.page.upper())
-    text, wallets_dict = await preprocess_wallets(wallets=wallets_list)
+    text, wallets_dict = await WalletService.preprocess_wallets(wallets=wallets_list)
     await state.update_data(**wallets_dict)
-    await callback.message.edit_text(text=text,
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back='wallets',
-                                                                        back_page=callback_data.page,
-                                                                        sizes=await get_size_wallet(
-                                                                            len_wallet=len(wallets_dict),
-                                                                            count_any_button=1),
-                                                                        **wallets_dict))
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                     back='wallets',
+                                                     back_page=callback_data.page,
+                                                     sizes=await WalletService.get_size_wallet(
+                                                         len_wallet=len(wallets_dict),
+                                                         count_any_button=1),
+                                                     **wallets_dict))
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page.regexp(r'^id-\d+$')), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(F.page.regexp(r'^TokenId-\d+$')), IsAdmin())
 async def address_menu(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
     await state.update_data(token=callback_data.page)
     state_data = await state.get_data()
     await callback.message.edit_text(text=botMessages['addressMenu'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=state_data['name_net'],
-                                                                        back_page=callback_data.page,
-                                                                        sizes=(2, 1),
-                                                                        **addressMenu))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=state_data['name_net'],
+                                                                                  back_page=callback_data.page,
+                                                                                  sizes=(2, 1),
+                                                                                  **addressMenu))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'deleteAddress'), StateFilter(None), IsAdmin())
@@ -211,9 +197,9 @@ async def delete_address_menu(callback: CallbackQuery, callback_data: AdminCallb
     sureDelete_copy = sureLexicon.copy()
     sureDelete_copy[callback_data.back_page] = sureDelete_copy.pop('no')
     await callback.message.edit_text(text=botMessages['sureDelete'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        sizes=(2,),
-                                                                        **sureDelete_copy))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  sizes=(2,),
+                                                                                  **sureDelete_copy))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), StateFilter(None), IsAdmin())
@@ -222,8 +208,8 @@ async def delete_address(callback: CallbackQuery, state: FSMContext) -> None:
     address_id = int(state_data['token'].split('-')[1])
     await WalletAPI.delete_wallet(wallet_id=address_id)
     await callback.message.edit_text(text=botMessages['deleteAddress'].format(wallet=state_data[state_data['token']]),
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        **addressDelete))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  **addressDelete))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'statusWork', 'addressEdit'})),
@@ -243,11 +229,11 @@ async def address_edit(callback: CallbackQuery, callback_data: AdminCallbackFact
     await callback.message.edit_text(text=botMessages['addressEdit'].format(address=address,
                                                                             percent=percent,
                                                                             workType=statusWork[status_work]),
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back_page=callback_data.back_page,
-                                                                        back=state_data['token'],
-                                                                        sizes=(2, 1),
-                                                                        **address_edit_copy))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back_page=callback_data.back_page,
+                                                                                  back=state_data['token'],
+                                                                                  sizes=(2, 1),
+                                                                                  **address_edit_copy))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'percentEdit', 'repeatGetPercent'})),
@@ -257,12 +243,13 @@ async def percent_edit(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str: str] = await state.get_data()
     back_page: str = state_data['token']
     await callback.message.edit_text(text=botMessages['percentEdit'],
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=back_page,
-                                                                        back_name=backLexicon['cancelLexicon']))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=back_page,
+                                                                                  back_name=backLexicon[
+                                                                                      'cancelLexicon']))
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'),
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'checkPercent'),
                        StateFilter(FSMPercentEdit.check_percent), IsAdmin())
 async def update_percent_wallet(callback: CallbackQuery,
                                 state: FSMContext) -> None:
@@ -272,46 +259,195 @@ async def update_percent_wallet(callback: CallbackQuery,
     percent = state_data['percent']
     await WalletAPI.update_percent(wallet_id=wallet_id, percent=percent)
     await callback.message.edit_text(text=botMessages['completedEditPercent'].format(percent=percent),
-                                     reply_markup=await create_fac_menu(AdminCallbackFactory,
-                                                                        back=state_data['token'],
-                                                                        back_name=backLexicon['backLexicon']))
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=state_data['token'],
+                                                                                  back_name=backLexicon['backLexicon']))
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'revoke'), IsAdmin())
-async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory, state: FSMContext) -> None:
-    await state.set_state(FSMRevokeMission.sure)
-    await callback.message.edit_text(text=botMessages['sureRevoke'].format(
-        missionID=callback_data.mission_id
-    ),
-        reply_markup=await create_fac_mission(MissionCallbackFactory,
-                                              mission_id=callback_data.mission_id,
-                                              back=str(callback_data.mission_id),
-                                              back_name=backLexicon['backLexicon'],
-                                              sizes=(2,),
-                                              **yesLexicon))
+async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory,
+                               state: FSMContext) -> None:
+    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
+        await state.set_state(FSMRevokeMission.sure)
+        await state.update_data(typeRevoke='SIMPLE')
+        await callback.message.edit_text(text=botMessages['sureRevoke'].format(
+            missionID=callback_data.mission_id),
+            reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                            mission_id=callback_data.mission_id,
+                                                            back=callback_data.mission_id,
+                                                            back_name=backLexicon['backLexicon'],
+                                                            sizes=(1, 1),
+                                                            **revokeMission))
+    else:
+        await callback.answer(text=errorLexicon['anotherAdminTakeMiss'])
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'revokeWithMessage'), IsAdmin())
+async def get_message_to_revoke(callback: CallbackQuery, callback_data: MissionCallbackFactory,
+                                state: FSMContext) -> None:
+    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
+        await state.set_state(FSMRevokeMission.message)
+        await state.update_data(missionID=callback_data.mission_id, messageID=callback.message.message_id)
+        await callback.message.edit_text(
+            text=botMessages['getMessageToRevoke'],
+            reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                            mission_id=callback_data.mission_id,
+                                                            back=callback_data.mission_id))
+    else:
+        await callback.answer(text=errorLexicon['anotherAdminTakeMiss'])
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'YesRevokeMission'),
+                       StateFilter(FSMRevokeMission.sure), IsAdmin())
+async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory,
+                         state: FSMContext, bot: Bot) -> None:
+    state_data = await state.get_data()
+    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    type_revoke = state_data['typeRevoke']
+    message = state_data.get('messageRevoke', None)
+    await callback.message.edit_text(
+        text=botMessages['revokeSimpleA']
+        if type_revoke == 'SIMPLE'
+        else botMessages['revokeWithTextA'].format(messageRevoke=message),
+        reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                     back='missions',
+                                                     back_name=backLexicon['backMission']))
+    await bot.send_message(chat_id=user.UserId,
+                           text=botMessages['revokeSimpleU'].format(missionID=mission_obj.Id)
+                           if type_revoke == 'SIMPLE'
+                           else botMessages['revokeWithTextU'].format(missionID=mission_obj.Id,
+                                                                      messageRevoke=message),
+                           reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                        back='missions',
+                                                                        back_name=backLexicon['backMission']))
+    await SubmissionsAPI.delete_mission_by_id(mission_id=mission_obj.Id)
+    await state.clear()
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin())
 async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFactory,
                        state: FSMContext) -> None:
     await state.clear()
-    mission_obj, wallet_obj = await SubmissionsAPI.get_mission(mission_id=callback_data.mission_id)
-    copy_sendMission = sendMission.copy()
-    copy_sendMission['changeStatus'] = sendMission['changeStatus'].format(statusMission=mission_obj.Status)
+    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
     await callback.message.edit_text(text=botMessages['sendMission'].format(
-        currencyTo=wallet_obj.NameNet,
+        currencyTo=mission_obj.CurrencyTo,
         missionID=mission_obj.Id,
-        userID=callback.from_user.id,
+        adminID=mission_obj.AdminId,
+        userID=user.UserId,
         workWallet=wallet_obj.Address,
         userRequisites=mission_obj.AddressUser,
         amountFrom=mission_obj.AmountFrom,
+        NameNet=wallet_obj.NameNet,
         amountTo=mission_obj.AmountTo,
-        statusMission=mission_obj.Status,
+        statusMission=changeStatus[mission_obj.Status.lower()].upper(),
         dataTime=mission_obj.DateTime
     ),
-        reply_markup=await create_fac_mission(MissionCallbackFactory,
-                                              mission_id=mission_obj.Id,
-                                              back='main',
-                                              back_name=backLexicon['backMainMenu'],
-                                              sizes=(2, 1),
-                                              **copy_sendMission))
+        reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                        mission_id=mission_obj.Id,
+                                                        back='missions',
+                                                        back_name=backLexicon['backMission'],
+                                                        sizes=(2, 1),
+                                                        **sendMission))
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed', 'changeStatus'})),
+                       IsAdmin())
+async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFactory, bot: Bot) -> None:
+    if callback_data.page != callback_data.back_page:
+        mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+        if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
+            if callback_data.page != 'changeStatus':
+                await SubmissionsAPI.update_mission_status(submission_id=callback_data.mission_id,
+                                                           status=callback_data.page.upper())
+                mission_obj.Status = callback_data.page.upper()
+            copy_changeStatus = changeStatus.copy()
+            copy_changeStatus[mission_obj.Status.lower()] = f'{mission_obj.Status} {checkMark["yes"]}'
+            await callback.message.edit_text(text=botMessages['changeStatus'].format(
+                missionID=mission_obj.Id,
+                statusMission=mission_obj.Status
+            ),
+                reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                mission_id=callback_data.mission_id,
+                                                                back=callback_data.mission_id,
+                                                                back_name=backLexicon['backLexicon'],
+                                                                back_page=callback_data.page,
+                                                                sizes=(3, 1),
+                                                                **copy_changeStatus))
+            if callback_data.page in {'wait', 'accepted', 'completed'}:
+                await bot.send_message(
+                    chat_id=user.UserId,
+                    text=botMessages['changeStatusUser'].format(
+                        missionID=mission_obj.Id,
+                        statusMission=changeStatus[mission_obj.Status.lower()].upper(),
+                    ),
+                    reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                    mission_id=callback_data.mission_id,
+                                                                    back='main',
+                                                                    back_name=backLexicon[
+                                                                        'backMainMenu'],
+                                                                    sizes=(1, 1),
+                                                                    **informationMissionUser))
+                if callback_data.page == 'wait':
+                    await SubmissionsAPI.update_admin_id(submission_id=mission_obj.Id,
+                                                         admin_id=None)
+                else:
+                    await SubmissionsAPI.update_admin_id(submission_id=mission_obj.Id,
+                                                         admin_id=callback.from_user.id)
+        elif mission_obj.AdminId != callback.from_user.id:
+            copy_changeStatus = changeStatus.copy()
+            copy_changeStatus[mission_obj.Status.lower()] = f'{mission_obj.Status} {checkMark["yes"]}'
+            await callback.message.edit_text(
+                text=errorLexicon['anotherAdminTakeMiss'],
+                reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                mission_id=callback_data.mission_id,
+                                                                back=callback_data.mission_id,
+                                                                back_name=backLexicon['backLexicon'],
+                                                                back_page=callback_data.page,
+                                                                sizes=(3, 1),
+                                                                **copy_changeStatus))
+
+    await callback.answer()
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'missions'), IsAdmin())
+async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+    await callback.message.edit_text(text=botMessages['missionsTextUser'],
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='settings',
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page.in_({'accepted', 'completed', 'wait'})), IsAdmin())
+async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+    try:
+        mission_status = callback_data.page.upper()
+        missions_data: list[Submissions] = await (
+            SubmissionsAPI.get_missions_by_status(mission_status=mission_status,
+                                                  pagination=True,
+                                                  offset=callback_data.mission_page))
+        if missions_data:
+            mission_count = await SubmissionsAPI.get_count_missions_by_status(mission_status=mission_status)
+            text, preprocess_mission = await SubmissionService.preprocess_mission_data(mission_data=missions_data)
+            await callback.message.edit_text(
+                text=text,
+                reply_markup=await Factories.create_fac_pagination_missions(mission_status=callback_data.page,
+                                                                            back_page=callback_data.page,
+                                                                            back='missions',
+                                                                            mission_count=mission_count,
+                                                                            mission_page=callback_data.mission_page,
+                                                                            **preprocess_mission))
+        else:
+            await callback.message.edit_text(text=errorLexicon['errorMission'],
+                                             reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                          back_page=callback_data.page,
+                                                                                          back='missions',
+                                                                                          sizes=(3,),
+                                                                                          **listMissions))
+        await callback.answer()
+    except exceptions.TelegramBadRequest:
+        pass
