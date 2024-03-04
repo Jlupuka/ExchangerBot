@@ -17,7 +17,6 @@ from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workT
 from keyboard.keyboard_factory import Factories
 from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory
 
-from services import logger
 from services.submissionService import SubmissionService
 from services.walletService import WalletService
 from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
@@ -40,7 +39,6 @@ async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallb
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'statistics'), IsAdmin())
 async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
-    logger.info(callback_data)
     await callback.message.edit_text(text=botMessages['statisticTextUser'],
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
                                                                                   back=callback_data.back_page))
@@ -264,7 +262,7 @@ async def update_percent_wallet(callback: CallbackQuery,
                                                                                   back_name=backLexicon['backLexicon']))
 
 
-@router.callback_query(MissionCallbackFactory.filter(F.page == 'revoke'), IsAdmin())
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'revoke'), IsAdmin(checkAdminWork=True))
 async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory,
                                state: FSMContext) -> None:
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
@@ -283,7 +281,7 @@ async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCa
         await callback.answer(text=errorLexicon['anotherAdminTakeMiss'])
 
 
-@router.callback_query(MissionCallbackFactory.filter(F.page == 'revokeWithMessage'), IsAdmin())
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'revokeWithMessage'), IsAdmin(checkAdminWork=True))
 async def get_message_to_revoke(callback: CallbackQuery, callback_data: MissionCallbackFactory,
                                 state: FSMContext) -> None:
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
@@ -300,7 +298,7 @@ async def get_message_to_revoke(callback: CallbackQuery, callback_data: MissionC
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'YesRevokeMission'),
-                       StateFilter(FSMRevokeMission.sure), IsAdmin())
+                       StateFilter(FSMRevokeMission.sure), IsAdmin(checkAdminWork=True))
 async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory,
                          state: FSMContext, bot: Bot) -> None:
     state_data = await state.get_data()
@@ -326,7 +324,7 @@ async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallback
     await state.clear()
 
 
-@router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin())
+@router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin(checkAdminWork=True))
 async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFactory,
                        state: FSMContext) -> None:
     await state.clear()
@@ -353,7 +351,7 @@ async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFa
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed', 'changeStatus'})),
-                       IsAdmin())
+                       IsAdmin(checkAdminWork=True))
 async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFactory, bot: Bot) -> None:
     if callback_data.page != callback_data.back_page:
         mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
@@ -411,8 +409,8 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
     await callback.answer()
 
 
-@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'), IsAdmin())
-@router.callback_query(AdminCallbackFactory.filter(F.page == 'missions'), IsAdmin())
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'))
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'missions'), IsAdmin(checkAdminWork=True))
 async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['missionsTextUser'],
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
@@ -422,7 +420,8 @@ async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbac
                                                                                   **listMissions))
 
 
-@router.callback_query(AdminCallbackFactory.filter(F.page.in_({'accepted', 'completed', 'wait'})), IsAdmin())
+@router.callback_query(AdminCallbackFactory.filter(F.page.in_({'accepted', 'completed', 'wait'})),
+                       IsAdmin(checkAdminWork=True))
 async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
     try:
         mission_status = callback_data.page.upper()
@@ -448,6 +447,7 @@ async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackF
                                                                                           back='missions',
                                                                                           sizes=(3,),
                                                                                           **listMissions))
-        await callback.answer()
     except exceptions.TelegramBadRequest:
         pass
+    finally:
+        await callback.answer()

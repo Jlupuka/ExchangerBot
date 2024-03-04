@@ -13,14 +13,15 @@ from databaseAPI.tables.usersTable import Users
 
 class AdminAPI:
     @staticmethod
-    async def check_admin(user_id: int) -> bool:
+    async def check_admin(user_id: int, check_admin: bool) -> bool:
         """
         Checking the user for an admin
+        :param check_admin: bool
         :param user_id: int
         :return: bool
         """
         user: Users = await UserAPI.select_user(user_id=user_id)
-        return user.Admin
+        return user.Admin if check_admin is False else user.Admin and user.WorkType
 
     @staticmethod
     async def make_admin(user_id: int) -> None:

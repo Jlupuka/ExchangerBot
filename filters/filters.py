@@ -16,13 +16,16 @@ class IsAdmin(BaseFilter):
     A filter that will check if the user is an administrator or not
     """
 
+    def __init__(self, checkAdminWork: bool = False) -> None:
+        self.checkAdminWork = checkAdminWork
+
     async def __call__(self, message: Message) -> bool:
         """
         A filter that will check if the user is an administrator or not
         :param message: aiogram.filters.Message
         :return: bool
         """
-        return await AdminAPI.check_admin(user_id=message.from_user.id)
+        return await AdminAPI.check_admin(user_id=message.from_user.id, check_admin=self.checkAdminWork)
 
 
 class IsCryptoAddress(BaseFilter):

@@ -16,7 +16,6 @@ from factories.factory import UserCallbackFactory, MissionCallbackFactory
 
 from magic_filter import F
 
-from services import logger
 from services.cryptoService import CryptoCheck, min_sum
 from services.userService import UserService
 from services.walletService import WalletService
@@ -126,7 +125,6 @@ async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallback
                        StateFilter(FSMFiatCrypto.currency_to))
 async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.update_data(currency_to=callback_data.page.upper())
-    logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
                                      reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
@@ -137,7 +135,6 @@ async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'repeat', 'no'})),
                        StateFilter(FSMFiatCrypto.check_validate))
 async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> None:
-    logger.debug(await state.get_data())
     await state.set_state(FSMFiatCrypto.requisites)
     await callback.message.edit_text(text=botMessages['getAddressCrypto'],
                                      reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
