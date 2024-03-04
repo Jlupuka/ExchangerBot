@@ -337,7 +337,7 @@ async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFa
         workWallet=wallet_obj.Address,
         userRequisites=mission_obj.AddressUser,
         amountFrom=mission_obj.AmountFrom,
-        NameNet=wallet_obj.NameNet,
+        walletCurrency=wallet_obj.NameNet,
         amountTo=mission_obj.AmountTo,
         statusMission=changeStatus[mission_obj.Status.lower()].upper(),
         dataTime=mission_obj.DateTime
@@ -409,7 +409,7 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
     await callback.answer()
 
 
-@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'))
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'), IsAdmin(checkAdminWork=True))
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'missions'), IsAdmin(checkAdminWork=True))
 async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['missionsTextUser'],

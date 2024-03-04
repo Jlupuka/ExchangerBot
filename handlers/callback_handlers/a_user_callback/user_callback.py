@@ -175,6 +175,22 @@ async def save_type_fiat_transaction(callback: CallbackQuery,
                                                                                   **choiceMethod))
 
 
+@router.callback_query(UserCallbackFactory.filter(F.page == 'crypto'),
+                       StateFilter(FSMFiatCrypto.method, FSMFiatCrypto.check_validate_sum))
+async def crypto_method(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
+    wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
+                                                                   type_wallet='CRYPTO')
+    size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
+    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto['crypto']),
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back=callback_data.back_page,
+                                                                                  sizes=size,
+                                                                                  **wallets_dict))
+
+
+@router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory),
+                       StateFilter(FSMFiatCrypto.method, FSMFiatCrypto.check_validate_sum))
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'rub', 'usd', 'repeatGetSum'})),
                        StateFilter(FSMFiatCrypto.method, FSMFiatCrypto.check_validate_sum))
 async def rub_usd_method(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
@@ -193,7 +209,8 @@ async def rub_usd_method(callback: CallbackQuery, callback_data: UserCallbackFac
                                                            margins=work_wallet.Percent)
     await state.update_data(work_walletRequisites=work_wallet.Address,
                             walletPercent=work_wallet.Percent,
-                            walletId=work_wallet.Id)
+                            walletId=work_wallet.Id,
+                            WalletCurrency=work_wallet.NameNet)
     await callback.message.edit_text(text=botMessages['getSum'].format(min_sum=minimal_amount,
                                                                        currency_from=state_data['currency_from'],
                                                                        currency_to=state_data['currency_to'],
@@ -264,8 +281,8 @@ async def receipt_verification(callback: CallbackQuery, state: FSMContext) -> No
 @router.callback_query(UserCallbackFactory.filter(F.page == 'sent'), StateFilter(FSMFiatCrypto.money_sent))
 async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -> None:
     state_data: dict[str: str] = await state.get_data()
+    walletCurrency: str = state_data['WalletCurrency']
     currency_to: str = state_data['currency_to']
-    currency_from: str = state_data['currency_from']
     wallet_requisites: str = state_data['user_requisites']
     wallet_id: int = state_data['walletId']
     amount_to: float = state_data['amount_to']
@@ -305,13 +322,13 @@ async def create_mission(callback: CallbackQuery, state: FSMContext, bot: Bot) -
         await bot.send_message(chat_id=admin_obj.UserId,
                                text=botMessages['sendMission'].format(
                                    currencyTo=currency_to,
+                                   walletCurrency=walletCurrency,
                                    missionID=mission_obj.Id,
                                    adminID=mission_obj.AdminId,
                                    userID=callback.from_user.id,
                                    workWallet=work_wallet,
                                    userRequisites=wallet_requisites,
                                    amountFrom=amount_from,
-                                   NameNet=currency_from,
                                    amountTo=amount_to,
                                    statusMission=changeStatus[mission_obj.Status.lower()].upper(),
                                    dataTime=mission_obj.DateTime

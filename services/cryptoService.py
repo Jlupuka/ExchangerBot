@@ -10,7 +10,7 @@ from services.cardService import CardCheck
 
 # Define the regex patterns for each cryptocurrency
 token_patterns = {
-    'btc': r'1[a-zA-HJ-NP-Z1-9]{25,34}$',
+    'btc': r'^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$',
     'eth': r'0x[a-fA-F0-9]{40}$',
     'sol': r'^([1-9A-HJ-NP-Za-km-z]{44})$',
     'doge': r'D[a-zA-Z1-9]{33}$',
@@ -66,11 +66,13 @@ class CryptoCheck:
     @staticmethod
     async def currency_rate(currency_from: str, currency_to: str, margins: float = 1.05) -> float:
         if currency_to == 'XMR':
+            if currency_from == 'XMR':
+                return margins
             currency = round(await CryptoCheck.get_currency_by_binance() * margins, 7)
-            if currency_from == 'RUB':
-                usd = await CryptoCheck.currency_rate(currency_from='RUB', currency_to='USD', margins=1)
+            if currency_from != 'USD':
+                usd = await CryptoCheck.currency_rate(currency_from=currency_from, currency_to='USD', margins=1)
                 currency *= usd
-            return round(currency, 2)
+            return round(currency, 2) if currency_from in {'USD', 'RUB'} else round(currency, 7)
         return (1 / float((await CryptoCheck.ticker(currency_from))['data']['rates'][currency_to])) * margins
 
     @staticmethod
