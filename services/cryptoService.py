@@ -20,7 +20,8 @@ token_patterns = {
     'спб': r'^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$'
 }
 
-min_sum = 1000
+min_sum = 5000  # ₽
+commission_sum = 10  # $
 
 
 class CryptoCheck:
@@ -68,21 +69,22 @@ class CryptoCheck:
         if currency_to == 'XMR':
             if currency_from == 'XMR':
                 return margins
-            currency = round(await CryptoCheck.get_currency_by_binance() * margins, 7)
-            if currency_from != 'USD':
-                usd = await CryptoCheck.currency_rate(currency_from=currency_from, currency_to='USD', margins=1)
-                currency *= usd
+            currency = round(await CryptoCheck.get_currency_by_coingecko(currency_to=currency_from.lower()) * margins,
+                             7)
             return round(currency, 2) if currency_from in {'USD', 'RUB'} else round(currency, 7)
         return (1 / float((await CryptoCheck.ticker(currency_from))['data']['rates'][currency_to])) * margins
 
     @staticmethod
-    async def get_currency_by_binance(symbol: str = 'XMRUSDT') -> float:
+    async def get_currency_by_coingecko(currency_from: str = 'monero', currency_to: str = 'usd') -> float:
         async with aiohttp.ClientSession() as session:
-            url = 'https://api.binance.com/api/v3/ticker/price'
-            params = {'symbol': symbol}
+            url = 'https://api.coingecko.com/api/v3/simple/price'
+            params = {
+                'ids': currency_from,
+                'vs_currencies': currency_to
+            }
             async with session.get(url=url, params=params) as response:
                 data = await response.json()
-                currency_rate = data['price']
+                currency_rate = data['monero'][currency_to]
                 return float(currency_rate)
 
     @staticmethod
