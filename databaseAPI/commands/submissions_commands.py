@@ -48,7 +48,16 @@ class SubmissionsAPI:
     async def get_count_missions_by_status(mission_status: str) -> int:
         async with get_session() as session:
             sql: str = select(func.count(Submissions.Id)).where(
-                       Submissions.Status == mission_status)
+                Submissions.Status == mission_status)
+            count_chunk: ChunkedIteratorResult = await session.execute(sql)
+            return count_chunk.scalar()
+
+    @staticmethod
+    async def get_count_user_missions_by_status(mission_status: str, user_id: int) -> int:
+        async with get_session() as session:
+            sql: str = select(func.count(Submissions.Id)).join(Users).where(
+                Submissions.Status == mission_status,
+                Users.UserId == user_id)
             count_chunk: ChunkedIteratorResult = await session.execute(sql)
             return count_chunk.scalar()
 
@@ -87,6 +96,21 @@ class SubmissionsAPI:
             else:
                 sql = select(Submissions).where(
                     Submissions.Status == mission_status)
+            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
+            return mission_chunk.scalars().all()
+
+    @staticmethod
+    async def get_user_missions_by_status(mission_status: str, user_id: int, offset: int = 0,
+                                          pagination: bool = False) -> list[Submissions]:
+        async with get_session() as session:
+            if pagination:
+                sql: str = select(Submissions).join(Users).where(
+                    Submissions.Status == mission_status,
+                    Users.UserId == user_id).limit(8).offset(offset * 8)
+            else:
+                sql = select(Submissions).join(Users).where(
+                    Submissions.Status == mission_status,
+                    Users.UserId == user_id)
             mission_chunk: ChunkedIteratorResult = await session.execute(sql)
             return mission_chunk.scalars().all()
 
