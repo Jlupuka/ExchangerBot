@@ -95,7 +95,8 @@ class Factories:
         return kb_builder.as_markup()
 
     @staticmethod
-    async def create_fac_pagination_missions(back: str = None,
+    async def create_fac_pagination_missions(factory: Type[AdminCallbackFactory | UserCallbackFactory],
+                                             back: str = None,
                                              back_page: str = None,
                                              back_name: str = backLexicon['backLexicon'],
                                              mission_count: int = 0,
@@ -118,7 +119,7 @@ class Factories:
         if mission_page > 0:
             kb_builder.add(InlineKeyboardButton(
                 text='<<',
-                callback_data=AdminCallbackFactory(
+                callback_data=factory(
                     page=mission_status,
                     back_page=back_page,
                     mission_page=mission_page - 1
@@ -128,7 +129,7 @@ class Factories:
         if (mission_page + 1) * 8 < mission_count:
             kb_builder.add(InlineKeyboardButton(
                 text='>>',
-                callback_data=AdminCallbackFactory(
+                callback_data=factory(
                     page=mission_status,
                     back_page=back_page,
                     mission_page=mission_page + 1
@@ -138,7 +139,7 @@ class Factories:
         if back:
             kb_builder.add(InlineKeyboardButton(
                 text=back_name,
-                callback_data=AdminCallbackFactory(
+                callback_data=factory(
                     back_page=back_page,
                     page=back,
                 ).pack()
