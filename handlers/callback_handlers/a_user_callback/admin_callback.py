@@ -2,7 +2,7 @@ from aiogram import Router, Bot, exceptions
 from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile
 
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
@@ -16,6 +16,7 @@ from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workT
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory
+from services.qrCodeService import QRCodeService
 
 from services.submissionService import SubmissionService
 from services.walletService import WalletService
@@ -264,7 +265,10 @@ async def update_percent_wallet(callback: CallbackQuery,
 
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'revoke'), IsAdmin(checkAdminWork=True))
 async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory,
-                               state: FSMContext) -> None:
+                               state: FSMContext, bot: Bot) -> None:
+    if (photo_id := (await state.get_data()).get('photoId')) is not None:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
+        await state.update_data(photoId=None)
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.sure)
@@ -283,7 +287,10 @@ async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCa
 
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'revokeWithMessage'), IsAdmin(checkAdminWork=True))
 async def get_message_to_revoke(callback: CallbackQuery, callback_data: MissionCallbackFactory,
-                                state: FSMContext) -> None:
+                                state: FSMContext, bot: Bot) -> None:
+    if (photo_id := (await state.get_data()).get('photoId')) is not None:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
+        await state.update_data(photoId=None)
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.message)
@@ -326,33 +333,50 @@ async def revoke_mission(callback: CallbackQuery, callback_data: MissionCallback
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin(checkAdminWork=True))
 async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFactory,
-                       state: FSMContext) -> None:
+                       state: FSMContext, bot: Bot) -> None:
     await state.clear()
+    await callback.message.delete()
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
-    await callback.message.edit_text(text=botMessages['sendMission'].format(
-        currencyTo=mission_obj.CurrencyTo,
-        missionID=mission_obj.Id,
-        adminID=mission_obj.AdminId,
-        userID=user.UserId,
-        workWallet=wallet_obj.Address,
-        userRequisites=mission_obj.AddressUser,
-        amountFrom=mission_obj.AmountFrom,
-        walletCurrency=wallet_obj.NameNet,
-        amountTo=mission_obj.AmountTo,
-        statusMission=changeStatus[mission_obj.Status.lower()].upper(),
-        dataTime=mission_obj.DateTime
-    ),
-        reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
-                                                        mission_id=mission_obj.Id,
-                                                        back='missions',
-                                                        back_name=backLexicon['backMission'],
-                                                        sizes=(2, 1),
-                                                        **sendMission))
+    if mission_obj.TypeTrans.split('/')[1] == 'CRYPTO' and mission_obj.Status != 'COMPLETED':
+        file_path: str = await QRCodeService.create_crypto_payment_qrcode(
+            amount=mission_obj.AmountFrom,
+            crypto_currency=mission_obj.CurrencyTo,
+            address=mission_obj.AddressUser,
+            description=f'UserId-{user.UserId}'
+        )
+        photo: FSInputFile = FSInputFile(file_path)
+        message = await bot.send_photo(chat_id=callback.from_user.id, photo=photo)
+        await state.update_data(photoId=message.message_id)
+        await QRCodeService.delete_file(file_name=file_path)
+    await bot.send_message(chat_id=callback.from_user.id,
+                           text=botMessages['sendMission'].format(
+                               currencyTo=mission_obj.CurrencyTo,
+                               missionID=mission_obj.Id,
+                               adminID=mission_obj.AdminId,
+                               userID=user.UserId,
+                               workWallet=wallet_obj.Address,
+                               userRequisites=mission_obj.AddressUser,
+                               amountFrom=mission_obj.AmountFrom,
+                               walletCurrency=wallet_obj.NameNet,
+                               amountTo=mission_obj.AmountTo,
+                               statusMission=changeStatus[mission_obj.Status.lower()].upper(),
+                               dataTime=mission_obj.DateTime
+                           ),
+                           reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                           mission_id=mission_obj.Id,
+                                                                           back='missions',
+                                                                           back_name=backLexicon['backMission'],
+                                                                           sizes=(2, 1),
+                                                                           **sendMission))
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed', 'changeStatus'})),
                        IsAdmin(checkAdminWork=True))
-async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFactory, bot: Bot) -> None:
+async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFactory,
+                       state: FSMContext, bot: Bot) -> None:
+    if (photo_id := (await state.get_data()).get('photoId')) is not None:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
+        await state.update_data(photoId=None)
     if callback_data.page != callback_data.back_page:
         mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
         if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
@@ -411,7 +435,11 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
 
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'), IsAdmin(checkAdminWork=True))
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'missions'), IsAdmin(checkAdminWork=True))
-async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbackFactory,
+                            state: FSMContext, bot: Bot) -> None:
+    if (photo_id := (await state.get_data()).get('photoId')) is not None:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
+        await state.update_data(photoId=None)
     await callback.message.edit_text(text=botMessages['missionsTextUser'],
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
                                                                                   back_page=callback_data.page,
@@ -422,7 +450,11 @@ async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbac
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'accepted', 'completed', 'wait'})),
                        IsAdmin(checkAdminWork=True))
-async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackFactory,
+                          state: FSMContext, bot: Bot) -> None:
+    if (photo_id := (await state.get_data()).get('photoId')) is not None:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
+        await state.update_data(photoId=None)
     try:
         mission_status = callback_data.page.upper()
         missions_data: list[Submissions] = await (
