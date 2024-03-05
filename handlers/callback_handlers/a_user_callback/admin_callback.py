@@ -466,7 +466,8 @@ async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackF
             text, preprocess_mission = await SubmissionService.preprocess_mission_data(mission_data=missions_data)
             await callback.message.edit_text(
                 text=text,
-                reply_markup=await Factories.create_fac_pagination_missions(mission_status=callback_data.page,
+                reply_markup=await Factories.create_fac_pagination_missions(factory=AdminCallbackFactory,
+                                                                            mission_status=callback_data.page,
                                                                             back_page=callback_data.page,
                                                                             back='missions',
                                                                             mission_count=mission_count,

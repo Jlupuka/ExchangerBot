@@ -1,4 +1,4 @@
-from aiogram import Router, Bot
+from aiogram import Router, Bot, exceptions
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
@@ -9,7 +9,8 @@ from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissions, choiceMethod, \
-    backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus, writeFiatOrCrypto
+    backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus, writeFiatOrCrypto, \
+    errorLexicon
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
@@ -19,6 +20,7 @@ from magic_filter import F
 from services.cryptoService import CryptoCheck, min_sum, commission_sum
 from services.qrCodeService import QRCodeService
 from services.stateService import StateService
+from services.submissionService import SubmissionService
 from services.userService import UserService
 from services.walletService import WalletService
 from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto
@@ -63,6 +65,7 @@ async def statistics_handler(callback: CallbackQuery, callback_data: UserCallbac
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'missions'))
+@router.callback_query(MissionCallbackFactory.filter(F.page == 'missions'))
 async def missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
     await callback.message.edit_text(text=botMessages['missionsTextUser'],
                                      reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
@@ -72,40 +75,39 @@ async def missions_handler(callback: CallbackQuery, callback_data: UserCallbackF
                                                                                   **listMissions))
 
 
-@router.callback_query(UserCallbackFactory.filter(F.page == 'accepted'))
+@router.callback_query(UserCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed'})))
 async def accepted_missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
-    #  данных под бота тг
-    await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page='missions',
-                                                                                  back=callback_data.back_page,
-                                                                                  sizes=(3,),
-                                                                                  **listMissions))
-
-
-@router.callback_query(UserCallbackFactory.filter(F.page == 'completed'))
-async def completed_missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
-    #  данных под бота тг
-    await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page='missions',
-                                                                                  back=callback_data.back_page,
-                                                                                  sizes=(3,),
-                                                                                  **listMissions))
-
-
-@router.callback_query(UserCallbackFactory.filter(F.page == 'wait'))
-async def waiting_missions_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    # TODO: Реализовать запрос к БД, для получения данных по заявкам. Так же сделать обработку\очистку
-    #  данных под бота тг
-    await callback.message.edit_text(text=botMessages['informationMissions'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page='missions',
-                                                                                  back=callback_data.back_page,
-                                                                                  sizes=(3,),
-                                                                                  **listMissions))
+    try:
+        mission_status = callback_data.page.upper()
+        missions_data: list[Submissions] = await (
+            SubmissionsAPI.get_user_missions_by_status(mission_status=mission_status,
+                                                       user_id=callback.from_user.id,
+                                                       pagination=True,
+                                                       offset=callback_data.mission_page))
+        if missions_data:
+            mission_count = await SubmissionsAPI.get_count_user_missions_by_status(mission_status=mission_status,
+                                                                                   user_id=callback.from_user.id)
+            text, preprocess_mission = await SubmissionService.preprocess_mission_data(mission_data=missions_data)
+            await callback.message.edit_text(
+                text=text,
+                reply_markup=await Factories.create_fac_pagination_missions(factory=UserCallbackFactory,
+                                                                            mission_status=callback_data.page,
+                                                                            back_page=callback_data.page,
+                                                                            back='missions',
+                                                                            mission_count=mission_count,
+                                                                            mission_page=callback_data.mission_page,
+                                                                            **preprocess_mission))
+        else:
+            await callback.message.edit_text(text=errorLexicon['errorMission'],
+                                             reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                          back_page=callback_data.page,
+                                                                                          back='missions',
+                                                                                          sizes=(3,),
+                                                                                          **listMissions))
+    except exceptions.TelegramBadRequest:
+        pass
+    finally:
+        await callback.answer()
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'rub-crypto', 'crypto-rub', 'crypto-crypto'})))
@@ -491,6 +493,7 @@ async def create_mission_FC(callback: CallbackQuery, state: FSMContext, bot: Bot
     await state.clear()
 
 
+@router.callback_query(MissionCallbackFactory.filter(F.page.isdigit()))
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'information'))
 async def information_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory) -> None:
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
@@ -508,6 +511,6 @@ async def information_mission(callback: CallbackQuery, callback_data: MissionCal
     ),
         reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
                                                         mission_id=callback_data.mission_id,
-                                                        back='main',
-                                                        back_name=backLexicon['backMainMenu'],
+                                                        back='missions',
+                                                        back_name=backLexicon['backMission'],
                                                         sizes=(1, 1)))
