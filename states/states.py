@@ -8,21 +8,33 @@ class FSMFiatCrypto(StatesGroup):
     check_validate = State()
     check_validate_sum = State()
     method = State()
+    get_sum_crypto = State()
     get_sum = State()
     money_sent = State()
 
 
 class FSMCryptoFiat(StatesGroup):
-    crypto_from = State()
+    check_validate_sum = State()
+    check_validate = State()
+    currency_to = State()
+    type_crypto = State()
     requisites = State()
     money_sent = State()
+    get_sum = State()
+    get_sum_crypto = State()
+    method = State()
 
 
 class FSMCryptoCrypto(StatesGroup):
-    crypto_from = State()
-    crypto_to = State()
+    check_validate_sum = State()
+    check_validate = State()
+    type_crypto = State()
+    currency_to = State()
     requisites = State()
     money_sent = State()
+    get_sum_crypto = State()
+    get_sum = State()
+    method = State()
 
 
 class FSMAddWallet(StatesGroup):
