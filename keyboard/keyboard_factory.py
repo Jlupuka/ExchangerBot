@@ -100,6 +100,7 @@ class Factories:
                                              back_page: str = None,
                                              back_name: str = backLexicon['backLexicon'],
                                              mission_count: int = 0,
+                                             mission_count_total: int = 0,
                                              mission_page: int = 0,
                                              mission_status: str = 'wait',
                                              **kwargs) -> InlineKeyboardMarkup:
@@ -126,7 +127,7 @@ class Factories:
                 ).pack()
             ))
             flag_go = True
-        if (mission_page + 1) * 8 < mission_count:
+        if (mission_page + 1) * 8 < mission_count_total:
             kb_builder.add(InlineKeyboardButton(
                 text='>>',
                 callback_data=factory(
@@ -150,7 +151,6 @@ class Factories:
             size = [1, 1]
         else:
             size = [1]
-
-        kb_builder.adjust(*[1] * abs(mission_count - (mission_page + 1) * 8),
+        kb_builder.adjust(*[1] * mission_count,
                           *size).as_markup(resize_keyboard=True)
         return kb_builder.as_markup()

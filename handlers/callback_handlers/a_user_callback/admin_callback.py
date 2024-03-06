@@ -12,10 +12,11 @@ from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
     checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
     statusWork, backLexicon, sendMission, changeStatus, checkMark, informationMissionUser, listMissions, \
-    revokeMission
+    revokeMission, revokeButton
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory
+from services import logger
 from services.qrCodeService import QRCodeService
 
 from services.submissionService import SubmissionService
@@ -336,7 +337,10 @@ async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFa
                        state: FSMContext, bot: Bot) -> None:
     await state.clear()
     await callback.message.delete()
+    sendMission_copy: dict[str: str] = sendMission.copy()
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    if mission_obj.Status != 'COMPLETED':
+        sendMission_copy = {**sendMission, **revokeButton}
     if mission_obj.TypeTrans.split('/')[1] == 'CRYPTO' and mission_obj.Status != 'COMPLETED':
         file_path: str = await QRCodeService.create_crypto_payment_qrcode(
             amount=mission_obj.AmountFrom,
@@ -366,8 +370,10 @@ async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFa
                                                                            mission_id=mission_obj.Id,
                                                                            back='missions',
                                                                            back_name=backLexicon['backMission'],
-                                                                           sizes=(2, 1),
-                                                                           **sendMission))
+                                                                           sizes=(2, 1)
+                                                                           if len(sendMission_copy) > 1
+                                                                           else (1, 1),
+                                                                           **sendMission_copy))
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed', 'changeStatus'})),
@@ -380,6 +386,7 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
     if callback_data.page != callback_data.back_page:
         mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
         if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
+            oldStatus = mission_obj.Status
             if callback_data.page != 'changeStatus':
                 await SubmissionsAPI.update_mission_status(submission_id=callback_data.mission_id,
                                                            status=callback_data.page.upper())
@@ -397,7 +404,7 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
                                                                 back_page=callback_data.page,
                                                                 sizes=(3, 1),
                                                                 **copy_changeStatus))
-            if callback_data.page in {'wait', 'accepted', 'completed'}:
+            if callback_data.page in {'wait', 'accepted', 'completed'}:  # Notifying the user
                 await bot.send_message(
                     chat_id=user.UserId,
                     text=botMessages['changeStatusUser'].format(
@@ -411,12 +418,12 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
                                                                         'backMainMenu'],
                                                                     sizes=(1, 1),
                                                                     **informationMissionUser))
-                if callback_data.page == 'wait':
-                    await SubmissionsAPI.update_admin_id(submission_id=mission_obj.Id,
-                                                         admin_id=None)
-                else:
-                    await SubmissionsAPI.update_admin_id(submission_id=mission_obj.Id,
-                                                         admin_id=callback.from_user.id)
+                await SubmissionsAPI.update_admin_id(submission_id=mission_obj.Id,
+                                                     admin_id=None
+                                                     if callback_data.page == 'wait'
+                                                     else callback.from_user.id)
+                logger.info("userID=%s, adminID=%s, oldStatus=%s, newStatus=%s",
+                            user.UserId, callback.from_user.id, oldStatus, mission_obj.Status)
         elif mission_obj.AdminId != callback.from_user.id:
             copy_changeStatus = changeStatus.copy()
             copy_changeStatus[mission_obj.Status.lower()] = f'{mission_obj.Status} {checkMark["yes"]}'
@@ -440,7 +447,10 @@ async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbac
     if (photo_id := (await state.get_data()).get('photoId')) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    await callback.message.edit_text(text=botMessages['missionsTextUser'],
+
+    await callback.message.edit_text(text=botMessages['missionsText'].format(
+        missionsCount=await SubmissionService.get_count_each_missions()
+    ),
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
                                                                                   back_page=callback_data.page,
                                                                                   back='settings',
@@ -462,7 +472,8 @@ async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackF
                                                   pagination=True,
                                                   offset=callback_data.mission_page))
         if missions_data:
-            mission_count = await SubmissionsAPI.get_count_missions_by_status(mission_status=mission_status)
+            mission_count = len(missions_data)
+            mission_count_total = await SubmissionsAPI.get_count_missions_by_status(mission_status=mission_status)
             text, preprocess_mission = await SubmissionService.preprocess_mission_data(mission_data=missions_data)
             await callback.message.edit_text(
                 text=text,
@@ -471,6 +482,7 @@ async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackF
                                                                             back_page=callback_data.page,
                                                                             back='missions',
                                                                             mission_count=mission_count,
+                                                                            mission_count_total=mission_count_total,
                                                                             mission_page=callback_data.mission_page,
                                                                             **preprocess_mission))
         else:

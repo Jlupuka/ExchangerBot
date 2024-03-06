@@ -1,3 +1,4 @@
+from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.tables import Submissions
 
 
@@ -13,3 +14,12 @@ class SubmissionService:
                                f'| 💱 {mission.CurrencyTo} '
                                f'| 💳 {mission.AddressUser[:6]}...{mission.AddressUser[-4:]}</code>\n')
         return ''.join(result_text), result_dict
+
+    @staticmethod
+    async def get_count_each_missions() -> str:
+        result: list = list()
+        for missionStatus in ('WAIT', 'ACCEPTED', 'COMPLETED'):
+            count_mission: int = await SubmissionsAPI.get_count_missions_by_status(mission_status=missionStatus)
+            text = f'<i>Количество <b>{missionStatus}</b> ⟶ <code>{count_mission}</code></i>'
+            result.append(text)
+        return '\n'.join(result)

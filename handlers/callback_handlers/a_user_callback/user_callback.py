@@ -10,7 +10,7 @@ from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissions, choiceMethod, \
     backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus, writeFiatOrCrypto, \
-    errorLexicon
+    errorLexicon, revokeButton
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
@@ -466,10 +466,7 @@ async def create_mission_FC(callback: CallbackQuery, state: FSMContext, bot: Bot
                                                      back='main',
                                                      back_name=backLexicon['backMainMenu']))
     if admin_obj:
-        copy_sendMission = sendMission.copy()
-        copy_sendMission['changeStatus'] = sendMission['changeStatus'].format(
-            statusMission=mission_obj.Status
-        )
+        sendMission_copy = {**sendMission, **revokeButton}
         await bot.send_message(chat_id=admin_obj.UserId,
                                text=botMessages['sendMission'].format(
                                    currencyTo=currency_to,
@@ -489,7 +486,7 @@ async def create_mission_FC(callback: CallbackQuery, state: FSMContext, bot: Bot
                                                                                back='main',
                                                                                back_name=backLexicon['backMainMenu'],
                                                                                sizes=(2, 1),
-                                                                               **copy_sendMission))
+                                                                               **sendMission_copy))
     await state.clear()
 
 
@@ -497,6 +494,9 @@ async def create_mission_FC(callback: CallbackQuery, state: FSMContext, bot: Bot
 @router.callback_query(MissionCallbackFactory.filter(F.page == 'information'))
 async def information_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory) -> None:
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    delete_mission = {
+        f'delete-{mission_obj.Id}': revokeButton['revoke']
+    } if mission_obj.Status == 'WAIT' else {}
     await callback.message.edit_text(text=botMessages['informationMissionUser'].format(
         missionID=mission_obj.Id,
         adminID=mission_obj.AdminId,
@@ -513,4 +513,17 @@ async def information_mission(callback: CallbackQuery, callback_data: MissionCal
                                                         mission_id=callback_data.mission_id,
                                                         back='missions',
                                                         back_name=backLexicon['backMission'],
-                                                        sizes=(1, 1)))
+                                                        sizes=(1, 1),
+                                                        **delete_mission))
+
+
+@router.callback_query(MissionCallbackFactory.filter(F.page.regexp(r'^delete-\d+$')))
+async def delete_user_mission(callback: CallbackQuery, callback_data: MissionCallbackFactory) -> None:
+    mission_id: str = callback_data.page.split('-')[1]
+    await SubmissionsAPI.delete_mission_by_id(mission_id=int(mission_id))
+    await callback.message.edit_text(text=botMessages['deleteMissionUser'].format(missionID=mission_id),
+                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                                  back_page=callback_data.page,
+                                                                                  back='profile',
+                                                                                  sizes=(3,),
+                                                                                  **listMissions))
