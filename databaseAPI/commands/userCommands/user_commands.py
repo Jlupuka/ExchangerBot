@@ -23,7 +23,8 @@ class UserAPI:
             admin_flag = user_id in config.AdminId.ADMINID
             user_object: Users = Users(
                 UserId=user_id,
-                Admin=admin_flag
+                Admin=admin_flag,
+                KYC=True if admin_flag else False
             )
             session.add(user_object)
             try:

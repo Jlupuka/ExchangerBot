@@ -1,4 +1,6 @@
+from typing import Optional
 from sqlalchemy import func, select, update, delete
+from sqlalchemy.engine import Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
 
@@ -83,7 +85,8 @@ class SubmissionsAPI:
             sql: str = select(Submissions, WalletAddress, Users).join(WalletAddress).join(Users).where(
                 Submissions.Id == mission_id)
             mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            mission, wallet, user = mission_chunk.fetchone()
+            response: Optional[tuple[Submissions, WalletAddress, Users]] = mission_chunk.fetchone()
+            mission, wallet, user = (None, None, None) if not response else response
             return mission, wallet, user
 
     @staticmethod
@@ -98,6 +101,14 @@ class SubmissionsAPI:
                     Submissions.Status == mission_status)
             mission_chunk: ChunkedIteratorResult = await session.execute(sql)
             return mission_chunk.scalars().all()
+
+    @staticmethod
+    async def get_user_missions_wallets(user_id: int) -> list[Row]:
+        async with get_session() as session:
+            sql: str = select(Submissions, WalletAddress).join(WalletAddress).join(Users).where(
+                Users.UserId == user_id)
+            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
+            return mission_chunk.fetchall()
 
     @staticmethod
     async def get_user_missions_by_status(mission_status: str, user_id: int, offset: int = 0,

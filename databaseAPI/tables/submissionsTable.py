@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, BigInteger
 from databaseAPI.database import Base
-from datetime import datetime
+import datetime
 
 
 class Submissions(Base):
@@ -16,4 +16,4 @@ class Submissions(Base):
     AddressUser = Column(String(255), nullable=False)
     Status = Column(String(255), default='WAIT')  # WAIT | ACCEPTED | COMPLETED
     AdminId = Column(BigInteger, default=None)
-    DateTime = Column(DateTime, default=datetime.utcnow())
+    DateTime = Column(DateTime, default=datetime.datetime.utcnow)
