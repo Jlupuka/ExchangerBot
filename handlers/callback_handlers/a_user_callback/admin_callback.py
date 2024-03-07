@@ -270,7 +270,7 @@ async def check_revoke_mission(callback: CallbackQuery, callback_data: MissionCa
     if (photo_id := (await state.get_data()).get('photoId')) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    mission_obj, _, _ = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.sure)
         await state.update_data(typeRevoke='SIMPLE')
@@ -292,7 +292,7 @@ async def get_message_to_revoke(callback: CallbackQuery, callback_data: MissionC
     if (photo_id := (await state.get_data()).get('photoId')) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+    mission_obj, _, _ = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.message)
         await state.update_data(missionID=callback_data.mission_id, messageID=callback.message.message_id)
@@ -339,41 +339,42 @@ async def mission_data(callback: CallbackQuery, callback_data: MissionCallbackFa
     await callback.message.delete()
     sendMission_copy: dict[str: str] = sendMission.copy()
     mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
-    if mission_obj.Status != 'COMPLETED':
-        sendMission_copy = {**sendMission, **revokeButton}
-    if mission_obj.TypeTrans.split('/')[1] == 'CRYPTO' and mission_obj.Status != 'COMPLETED':
-        file_path: str = await QRCodeService.create_crypto_payment_qrcode(
-            amount=mission_obj.AmountFrom,
-            crypto_currency=mission_obj.CurrencyTo,
-            address=mission_obj.AddressUser,
-            description=f'UserId-{user.UserId}'
-        )
-        photo: FSInputFile = FSInputFile(file_path)
-        message = await bot.send_photo(chat_id=callback.from_user.id, photo=photo)
-        await state.update_data(photoId=message.message_id)
-        await QRCodeService.delete_file(file_name=file_path)
-    await bot.send_message(chat_id=callback.from_user.id,
-                           text=botMessages['sendMission'].format(
-                               currencyTo=mission_obj.CurrencyTo,
-                               missionID=mission_obj.Id,
-                               adminID=mission_obj.AdminId,
-                               userID=user.UserId,
-                               workWallet=wallet_obj.Address,
-                               userRequisites=mission_obj.AddressUser,
-                               amountFrom=mission_obj.AmountFrom,
-                               walletCurrency=wallet_obj.NameNet,
-                               amountTo=mission_obj.AmountTo,
-                               statusMission=changeStatus[mission_obj.Status.lower()].upper(),
-                               dataTime=mission_obj.DateTime
-                           ),
-                           reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
-                                                                           mission_id=mission_obj.Id,
-                                                                           back='missions',
-                                                                           back_name=backLexicon['backMission'],
-                                                                           sizes=(2, 1)
-                                                                           if len(sendMission_copy) > 1
-                                                                           else (1, 1),
-                                                                           **sendMission_copy))
+    if mission_obj:
+        if mission_obj.Status != 'COMPLETED':
+            sendMission_copy = {**sendMission, **revokeButton}
+        if mission_obj.TypeTrans.split('/')[1] == 'CRYPTO' and mission_obj.Status != 'COMPLETED':
+            file_path: str = await QRCodeService.create_crypto_payment_qrcode(
+                amount=mission_obj.AmountFrom,
+                crypto_currency=mission_obj.CurrencyTo,
+                address=mission_obj.AddressUser,
+                description=f'UserId-{user.UserId}'
+            )
+            photo: FSInputFile = FSInputFile(file_path)
+            message = await bot.send_photo(chat_id=callback.from_user.id, photo=photo)
+            await state.update_data(photoId=message.message_id)
+            await QRCodeService.delete_file(file_name=file_path)
+        await bot.send_message(chat_id=callback.from_user.id,
+                               text=botMessages['sendMission'].format(
+                                   currencyTo=mission_obj.CurrencyTo,
+                                   missionID=mission_obj.Id,
+                                   adminID=mission_obj.AdminId,
+                                   userID=user.UserId,
+                                   workWallet=wallet_obj.Address,
+                                   userRequisites=mission_obj.AddressUser,
+                                   amountFrom=mission_obj.AmountFrom,
+                                   walletCurrency=wallet_obj.NameNet,
+                                   amountTo=mission_obj.AmountTo,
+                                   statusMission=changeStatus[mission_obj.Status.lower()].upper(),
+                                   dataTime=mission_obj.DateTime
+                               ),
+                               reply_markup=await Factories.create_fac_mission(MissionCallbackFactory,
+                                                                               mission_id=mission_obj.Id,
+                                                                               back='missions',
+                                                                               back_name=backLexicon['backMission'],
+                                                                               sizes=(2, 1)
+                                                                               if len(sendMission_copy) > 1
+                                                                               else (1, 1),
+                                                                               **sendMission_copy))
 
 
 @router.callback_query(MissionCallbackFactory.filter(F.page.in_({'wait', 'accepted', 'completed', 'changeStatus'})),
@@ -384,7 +385,7 @@ async def get_missions(callback: CallbackQuery, callback_data: MissionCallbackFa
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     if callback_data.page != callback_data.back_page:
-        mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
+        mission_obj, _, user = await SubmissionsAPI.get_mission_data(mission_id=callback_data.mission_id)
         if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
             oldStatus = mission_obj.Status
             if callback_data.page != 'changeStatus':
@@ -451,11 +452,11 @@ async def get_missions_type(callback: CallbackQuery, callback_data: AdminCallbac
     await callback.message.edit_text(text=botMessages['missionsText'].format(
         missionsCount=await SubmissionService.get_count_each_missions()
     ),
-                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
-                                                                                  back_page=callback_data.page,
-                                                                                  back='settings',
-                                                                                  sizes=(3,),
-                                                                                  **listMissions))
+        reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                     back_page=callback_data.page,
+                                                     back='settings',
+                                                     sizes=(3,),
+                                                     **listMissions))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'accepted', 'completed', 'wait'})),

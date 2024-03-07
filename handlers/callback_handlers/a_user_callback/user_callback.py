@@ -10,7 +10,7 @@ from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissions, choiceMethod, \
     backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus, writeFiatOrCrypto, \
-    errorLexicon, revokeButton
+    errorLexicon, revokeButton, kycVerificationLexicon
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
@@ -49,19 +49,25 @@ async def info_handler(callback: CallbackQuery) -> None:
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'profile'))
 async def profile_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    await callback.message.edit_text(text=botMessages['profileTextUser'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page=callback_data.page,
-                                                                                  back='main',
-                                                                                  sizes=(2,), **profileUser))
+    user: Users = await UserAPI.select_user(user_id=callback.from_user.id)
+    await callback.message.edit_text(text=botMessages['profileTextUser'].format(
+        userID=user.UserId,
+        KYCStatus=kycVerificationLexicon[user.KYC],
+        dateRegistration=await UserService.format_date_string(date_string=str(user.DateTime))
+    ),
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back_page=callback_data.page,
+                                                     back='main',
+                                                     sizes=(2,), **profileUser))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'statistics'))
 async def statistics_handler(callback: CallbackQuery, callback_data: UserCallbackFactory) -> None:
-    await callback.message.edit_text(text=botMessages['statisticTextUser'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page='main',
-                                                                                  back=callback_data.back_page))
+    await callback.message.edit_text(text=botMessages['statisticTextUser'].format(
+        **await UserService.statistic_user(user_id=callback.from_user.id)),
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back_page='main',
+                                                     back=callback_data.back_page))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'missions'))
