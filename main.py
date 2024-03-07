@@ -1,6 +1,7 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.middlewares.request_logging import RequestLogging
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.enums.parse_mode import ParseMode
@@ -27,7 +28,7 @@ async def main() -> None:
     storge: RedisStorage = RedisStorage(redis=redis)
 
     # Создаем объекты бота и диспетчера
-    bot: Bot = Bot(token=config.TelegramBot.TOKEN, parse_mode=ParseMode.HTML)
+    bot: Bot = Bot(token=config.TelegramBot.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp: Dispatcher = Dispatcher(storage=storge)
 
     # Создаем базу данных
