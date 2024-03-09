@@ -95,3 +95,20 @@ class AdminAPI:
             admins_chunk: ChunkedIteratorResult = await session.execute(sql)
             admins: list[Users] = admins_chunk.scalars().all()
             return admins if admins else None
+
+    @staticmethod
+    async def update_kyc(user_id: int, typeKYC: bool) -> None:
+        async with get_session() as session:
+            sql: str = update(Users).where(
+                Users.UserId == user_id
+            ).values(
+                KYC=typeKYC
+            )
+            try:
+                await session.execute(sql)
+                await session.commit()
+                return
+            except IntegrityError as IE:
+                logger.error(f"Indentation error in function '{__name__}': {IE}")
+                await session.rollback()
+
