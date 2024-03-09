@@ -12,10 +12,10 @@ from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
     checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
     statusWork, backLexicon, sendMission, changeStatus, checkMark, informationMissionUser, listMissions, \
-    revokeMission, revokeButton
+    revokeMission, revokeButton, startCallbackUser
 
 from keyboard.keyboard_factory import Factories
-from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory
+from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory, KYCCallbackFactory
 from services import logger
 from services.qrCodeService import QRCodeService
 
@@ -497,3 +497,36 @@ async def missions_return(callback: CallbackQuery, callback_data: AdminCallbackF
         pass
     finally:
         await callback.answer()
+
+
+@router.callback_query(KYCCallbackFactory.filter(F.page == 'verifUser'))
+async def approve_verif_user(callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot) -> None:
+    await AdminAPI.update_kyc(user_id=callback_data.user_id, typeKYC=True)
+    await callback.message.answer(text=botMessages['approveVerif'].format(
+        userID=callback_data.user_id
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    sizes=(2, 2),
+                                                    back_page='main',
+                                                    **startCallbackAdmin))
+    await bot.send_message(chat_id=callback_data.user_id, text=botMessages['approveVerifUser'],
+                           reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                        sizes=(2, 1, 2),
+                                                                        back_page='main',
+                                                                        **startCallbackUser))
+    await callback.message.delete()
+
+
+@router.callback_query(KYCCallbackFactory.filter(F.page == 'reject'))
+async def reject_verif_user(callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot) -> None:
+    await callback.message.answer(text=botMessages['rejectVerifAdmin'].format(
+        userID=callback_data.user_id
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    sizes=(2, 2),
+                                                    back_page='main',
+                                                    **startCallbackAdmin))
+    await bot.send_message(chat_id=callback_data.user_id, text=botMessages['rejectVerifUser'],
+                           reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                                        sizes=(2, 1, 2),
+                                                                        back_page='main',
+                                                                        **startCallbackUser))
+    await callback.message.delete()

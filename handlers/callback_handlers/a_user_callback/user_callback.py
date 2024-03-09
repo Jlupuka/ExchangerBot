@@ -10,7 +10,7 @@ from databaseAPI.tables import WalletAddress, Submissions, Users
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMissions, choiceMethod, \
     backLexicon, minSum, receiptVerification, getSum, fiatOrCrypto, sendMission, changeStatus, writeFiatOrCrypto, \
-    errorLexicon, revokeButton, kycVerificationLexicon
+    errorLexicon, revokeButton, kycVerificationLexicon, writeGetOrSend
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
@@ -23,7 +23,7 @@ from services.stateService import StateService
 from services.submissionService import SubmissionService
 from services.userService import UserService
 from services.walletService import WalletService
-from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto
+from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto, FSMVerify
 
 router: Router = Router()
 
@@ -125,7 +125,8 @@ async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallback
     wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
                                                                    type_wallet=typeWallet)
     size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
-    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto[typeWallet]),
+    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto[typeWallet],
+                                                                            typeTransaction=writeGetOrSend['SEND']),
                                      reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
                                                                                   back_page=callback_data.page,
                                                                                   back=callback_data.back_page,
@@ -171,7 +172,8 @@ async def choice_method_get_sum(callback: CallbackQuery, callback_data: UserCall
     wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
                                                                    type_wallet=typeTransaction)
     size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
-    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto[typeTransaction]),
+    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto[typeTransaction],
+                                                                            typeTransaction=writeGetOrSend['GET']),
                                      reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
                                                                                   back_page=callback_data.page,
                                                                                   back='main',
@@ -224,12 +226,14 @@ async def crypto_method(callback: CallbackQuery, callback_data: UserCallbackFact
     wallets_dict: dict[str: str] = await WalletService.get_wallets(func=WalletAPI.get_all_name_net_by_type,
                                                                    type_wallet='CRYPTO')
     size: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(wallets_dict), count_any_button=1)
-    await callback.message.edit_text(text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto['CRYPTO']),
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back_page=callback_data.page,
-                                                                                  back='back-method',
-                                                                                  sizes=size,
-                                                                                  **wallets_dict))
+    await callback.message.edit_text(
+        text=botMessages['choiceToken'].format(typeWallet=fiatOrCrypto['CRYPTO'],
+                                               typeTransaction=writeGetOrSend['TRANSLATE']),
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back_page=callback_data.page,
+                                                     back='back-method',
+                                                     sizes=size,
+                                                     **wallets_dict))
 
 
 @router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory),
@@ -533,3 +537,15 @@ async def delete_user_mission(callback: CallbackQuery, callback_data: MissionCal
                                                                                   back='profile',
                                                                                   sizes=(3,),
                                                                                   **listMissions))
+
+
+@router.callback_query(UserCallbackFactory.filter(F.page == 'verify'))
+async def user_verify(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(FSMVerify.get_photo)
+    await callback.message.delete()
+    verif_number: int = await UserService.verif_number()
+    photo: FSInputFile = FSInputFile('src/img/verifExample.png')
+    await callback.message.answer_photo(photo=photo, caption=botMessages['verif'].format(
+        verifNumber=verif_number
+    ))
+    await state.update_data(verifNumber=verif_number)
