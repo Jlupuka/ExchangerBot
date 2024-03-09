@@ -2,7 +2,7 @@ from typing import Type
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from factories.factory import UserCallbackFactory, AdminCallbackFactory, MissionCallbackFactory
+from factories.factory import UserCallbackFactory, AdminCallbackFactory, MissionCallbackFactory, KYCCallbackFactory
 from lexicon.lexicon import backLexicon
 
 
@@ -154,3 +154,15 @@ class Factories:
         kb_builder.adjust(*[1] * mission_count,
                           *size).as_markup(resize_keyboard=True)
         return kb_builder.as_markup()
+
+    @staticmethod
+    async def create_kyc_fac(user_id: int, verif_number: int, **kwargs) -> InlineKeyboardMarkup:
+        kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
+        kb_builder.row(*[InlineKeyboardButton(text=text,
+                                              callback_data=KYCCallbackFactory(
+                                                  user_id=user_id,
+                                                  verif_number=verif_number,
+                                                  page=data).pack()
+                                              ) for data, text in kwargs.items()])
+        kb_builder.adjust(2)
+        return kb_builder.as_markup(resize_keyboard=True)
