@@ -52,3 +52,7 @@ class FSMPercentEdit(StatesGroup):
 class FSMRevokeMission(StatesGroup):
     sure = State()
     message = State()
+
+
+class FSMVerify(StatesGroup):
+    get_photo = State()
