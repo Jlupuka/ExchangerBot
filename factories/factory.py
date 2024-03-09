@@ -3,18 +3,24 @@ from typing import Optional
 
 
 class UserCallbackFactory(CallbackData, prefix='user'):
-    page: Optional[str]
+    page: str
     back_page: Optional[str]
     mission_page: Optional[int] = 0
 
 
 class AdminCallbackFactory(CallbackData, prefix='admin'):
-    page: Optional[str]
+    page: str
     back_page: Optional[str]
     mission_page: Optional[int] = 0
 
 
 class MissionCallbackFactory(CallbackData, prefix='mission'):
-    mission_id: Optional[int]
-    page: Optional[str | int]
+    mission_id: int
+    page: str | int
     back_page: Optional[str | int]
+
+
+class KYCCallbackFactory(CallbackData, prefix='KYC'):
+    user_id: int
+    verif_number: int
+    page: Optional[str]
