@@ -2,7 +2,7 @@ from aiogram import Router, Bot, exceptions
 from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, BotName
 
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
@@ -20,6 +20,7 @@ from services import logger
 from services.qrCodeService import QRCodeService
 
 from services.submissionService import SubmissionService
+from services.userService import UserService
 from services.walletService import WalletService
 from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
 
@@ -40,8 +41,13 @@ async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallb
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'statistics'), IsAdmin())
-async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
-    await callback.message.edit_text(text=botMessages['statisticTextUser'],
+async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, bot: Bot) -> None:
+    data: dict[str: int | float | str] = await SubmissionsAPI.get_statistic_data()
+    gain_statistic: dict[str: int | float | str] = await UserService.statistic_admin()
+    result = {**data, **gain_statistic}
+    bot_name: BotName = await bot.get_my_name()
+    await bot.get_me()
+    await callback.message.edit_text(text=botMessages['statisticAdmin'].format(**result, botName=bot_name.name),
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
                                                                                   back=callback_data.back_page))
 
