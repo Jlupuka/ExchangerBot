@@ -1,7 +1,4 @@
 from typing import Callable, Dict, Any, Awaitable
-
-from services import logger
-
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
@@ -18,6 +15,5 @@ class DataBaseCheckUserMiddleware(BaseMiddleware):
             event: Message,
             data: Dict[str, Any]
     ) -> Any:
-        await UserAPI.check_user(user_id := event.from_user.id)
-        logger.info(f'User id={user_id}')
+        await UserAPI.check_user(event.from_user.id)
         return await handler(event, data)
