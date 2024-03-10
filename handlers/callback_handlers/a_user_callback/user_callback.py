@@ -1,4 +1,4 @@
-from aiogram import Router, Bot, exceptions
+from aiogram import Router, Bot, exceptions, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
@@ -15,9 +15,8 @@ from lexicon.lexicon import botMessages, startCallbackUser, profileUser, listMis
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
 
-from magic_filter import F
-
-from services.cryptoService import CryptoCheck, min_sum, commission_sum
+from services.cryptoService import CryptoCheck
+from services.dataService import JsonService
 from services.qrCodeService import QRCodeService
 from services.stateService import StateService
 from services.submissionService import SubmissionService
@@ -42,9 +41,12 @@ async def main_handler(callback: CallbackQuery, state: FSMContext, callback_data
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'info'))
-async def info_handler(callback: CallbackQuery) -> None:
-    # TODO: Сделать информационный текст о боте
-    await callback.answer()
+async def info_handler(callback: CallbackQuery, callback_data: UserCallbackFactory, bot: Bot) -> None:
+    await callback.message.edit_text(text=botMessages['informationUser'].format(
+        botName=(await bot.get_me()).username
+    ), reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                    back=callback_data.back_page,
+                                                    back_name=backLexicon['backMainMenu']))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'profile'))
@@ -135,7 +137,8 @@ async def choice_rub_crypto(callback: CallbackQuery, callback_data: UserCallback
 
 
 @router.callback_query(UserCallbackFactory.filter(), IsToken(UserCallbackFactory),
-                       StateFilter(FSMFiatCrypto.currency_to, FSMCryptoFiat.currency_to, FSMCryptoCrypto.currency_to))
+                       StateFilter(FSMFiatCrypto.currency_to, FSMCryptoFiat.currency_to,
+                                   FSMCryptoCrypto.currency_to))
 async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext) -> None:
     await state.update_data(currency_to=callback_data.page.upper())
     state_data: dict[str: str] = await state.get_data()
@@ -149,13 +152,17 @@ async def get_wallet(callback: CallbackQuery, callback_data: UserCallbackFactory
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page.in_({'repeat', 'no'})),
-                       StateFilter(FSMFiatCrypto.check_validate, FSMCryptoFiat.check_validate))
+                       StateFilter(FSMFiatCrypto.check_validate, FSMCryptoFiat.check_validate,
+                                   FSMCryptoCrypto.check_validate))
 async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> None:
+    state_data: dict[str: str] = await state.get_data()
+    typeTransaction = state_data['typeTransaction'].split('-')[1]
     await StateService.set_states(state_name='requisites', state_data=await state.get_data(), state=state)
-    await callback.message.edit_text(text=botMessages['getAddressCrypto'],
-                                     reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
-                                                                                  back='rub-crypto',
-                                                                                  back_page='main'))
+    await callback.message.edit_text(text=botMessages['getAddressCrypto'].format(
+        typeTransaction=writeFiatOrCrypto[typeTransaction]),
+        reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
+                                                     back=state_data['typeTransaction'],
+                                                     back_page='main'))
 
 
 @router.callback_query(UserCallbackFactory.filter(F.page == 'choiceGetSum'),
@@ -251,9 +258,9 @@ async def rub_usd_method_CC_CF(callback: CallbackQuery, callback_data: UserCallb
     work_wallet: WalletAddress = await WalletService.random_wallet(name_net=state_data['typeCrypto'])
     if state_data['currency_to'] == 'СПБ':
         state_data['currency_to'] = 'RUB'
-    minimal_amount = min_sum
+    minimal_amount = await JsonService.get_specific_data(name_data='minSum')
     if state_data['currency_from'] != 'RUB':
-        minimal_amount = await CryptoCheck.minimal_summa(minSum=min_sum,
+        minimal_amount = await CryptoCheck.minimal_summa(minSum=minimal_amount,
                                                          currency_to=state_data['currency_to'],
                                                          currency_from=state_data['currency_from'])
     currency_rate: float = await CryptoCheck.currency_rate(currency_from=state_data['currency_from'],
@@ -263,7 +270,8 @@ async def rub_usd_method_CC_CF(callback: CallbackQuery, callback_data: UserCallb
                             walletPercent=work_wallet.Percent,
                             walletId=work_wallet.Id,
                             WalletCurrency=work_wallet.NameNet)
-    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission_sum,
+    commission = await JsonService.get_specific_data(name_data='commissionSum')
+    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission,
                                                                     currency_from='USD',
                                                                     currency_to=state_data['typeCrypto'],
                                                                     margins=1)
@@ -289,10 +297,10 @@ async def rub_usd_method_FC(callback: CallbackQuery, callback_data: UserCallback
     if callback_data.page != 'repeatGetSum':
         await state.update_data(currency_from=callback_data.page.upper())
     state_data: dict[str: str] = await state.get_data()
-    minimal_amount = min_sum
+    minimal_amount = await JsonService.get_specific_data(name_data='minSum')
     work_wallet: WalletAddress = await WalletService.random_wallet(name_net=state_data['typeFiat'])
     if state_data['currency_from'] != 'RUB':
-        minimal_amount = await CryptoCheck.minimal_summa(minSum=min_sum,
+        minimal_amount = await CryptoCheck.minimal_summa(minSum=minimal_amount,
                                                          currency_to=state_data['currency_to'],
                                                          currency_from=state_data['currency_from'])
     currency_rate: float = await CryptoCheck.currency_rate(currency_from=state_data['currency_from'],
@@ -321,10 +329,12 @@ async def set_minimal_amount_CC_CF(callback: CallbackQuery, state: FSMContext) -
     walletPercent = state_data['walletPercent']
     if state_data['currency_to'] == 'СПБ':
         state_data['currency_to'] = 'RUB'
-    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission_sum,
+    commission = await JsonService.get_specific_data(name_data='commissionSum')
+    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission,
                                                                     currency_from='USD',
                                                                     currency_to=state_data['currency_to'],
                                                                     margins=1)
+    min_sum = await JsonService.get_specific_data(name_data='minSum')
     amount_to: float = await CryptoCheck.transaction_amount(amount=min_sum,
                                                             currency_from='RUB',
                                                             currency_to=state_data['currency_to'],
@@ -355,14 +365,15 @@ async def set_minimal_amount_CC_CF(callback: CallbackQuery, state: FSMContext) -
 @router.callback_query(UserCallbackFactory.filter(F.page == 'minSum'), StateFilter(FSMFiatCrypto.get_sum))
 async def set_minimal_amount_FC(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str: str] = await state.get_data()
-    minimal_amount = min_sum
+    minimal_amount = await JsonService.get_specific_data(name_data='minSum')
     if state_data['currency_from'] != 'RUB':
-        minimal_amount = await CryptoCheck.minimal_summa(minSum=min_sum,
+        minimal_amount = await CryptoCheck.minimal_summa(minSum=minimal_amount,
                                                          currency_to=state_data['currency_to'],
                                                          currency_from=state_data['currency_from'])
     await state.update_data(amount_from=minimal_amount)
     walletPercent = state_data['walletPercent']
-    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission_sum,
+    commission = await JsonService.get_specific_data(name_data='commissionSum')
+    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission,
                                                                     currency_from='USD',
                                                                     currency_to=state_data['currency_to'],
                                                                     margins=1)

@@ -5,14 +5,15 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
 from config import config
-from factories.factory import UserCallbackFactory, AdminCallbackFactory
+from factories.factory import UserCallbackFactory
 from filters.filters import IsCryptoAddress, IsDigit
 from keyboard.keyboard_factory import Factories
 
 from lexicon.lexicon import botMessages, startCallbackUser, checkCorrectAddress, repeatAddress, errorLexicon, \
     backLexicon, getSum, repeatGetSum, kycVerifyCheckAdmin
 from services.cardService import CardCheck
-from services.cryptoService import CryptoCheck, commission_sum
+from services.cryptoService import CryptoCheck
+from services.dataService import JsonService
 from services.stateService import StateService
 from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto, FSMVerify
 
@@ -49,10 +50,10 @@ async def add_mission(message: Message, state: FSMContext) -> None:
                                                                       ))
 
 
-@router.message(StateFilter(FSMFiatCrypto.requisites))
+@router.message(StateFilter(FSMFiatCrypto.requisites, FSMCryptoFiat.requisites, FSMCryptoCrypto.requisites))
 async def error_address(message: Message, state: FSMContext) -> None:
-    await state.set_state(FSMFiatCrypto.check_validate)
     state_data = await state.get_data()
+    await StateService.set_states(state_name='check_validate', state_data=state_data, state=state)
     await message.answer(text=errorLexicon['errorAddress'].format(net=state_data['currency_to'],
                                                                   wallet_address=message.text),
                          reply_markup=await Factories.create_fac_menu(UserCallbackFactory,
@@ -69,7 +70,8 @@ async def check_the_correct_transaction_CC_CF(message: Message, state: FSMContex
     walletPercent = state_data['walletPercent']
     if state_data['currency_to'] == 'СПБ':
         state_data['currency_to'] = 'RUB'
-    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission_sum,
+    commission = await JsonService.get_specific_data(name_data='commissionSum')
+    commission_amount: float = await CryptoCheck.transaction_amount(amount=commission,
                                                                     currency_from='USD',
                                                                     currency_to=state_data['currency_to'],
                                                                     margins=1)

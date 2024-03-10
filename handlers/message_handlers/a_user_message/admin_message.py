@@ -8,10 +8,11 @@ from filters.filters import IsAdmin, CheckState, IsDigit
 from keyboard.keyboard_factory import Factories
 
 from lexicon.lexicon import botMessages, startCallbackAdmin, errorLexicon, repeatAddress, walletType, \
-    repeatGetPercent, backLexicon, checkPercent, revokeMission
+    repeatGetPercent, backLexicon, checkPercent, revokeMission, yesLexicon
 from services.cardService import CardCheck
-from services.cryptoService import CryptoCheck, token_patterns
-from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
+from services.cryptoService import CryptoCheck
+from services.dataService import JsonService
+from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission, FSMEditPatterns, FSMEditMinSum
 
 router = Router()
 
@@ -31,7 +32,8 @@ async def start_handler(message: Message, state: FSMContext) -> None:
 @router.message(StateFilter(FSMAddWallet.currency_to), IsAdmin())
 async def get_crypto_to(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMAddWallet.address)
-    if message.text.lower() in token_patterns.keys():
+    patterns = await JsonService.get_token_patterns()
+    if message.text.lower() in patterns.keys():
         await state.update_data(currency_to=message.text.lower())
         await message.answer(text=botMessages['getNameNet'],
                              reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
@@ -69,7 +71,7 @@ async def get_token_address(message: Message, state: FSMContext) -> None:
                                                                           **repeatAddress))
 
 
-@router.message(StateFilter(FSMPercentEdit.get_percent), IsDigit(), IsAdmin())
+@router.message(StateFilter(FSMPercentEdit.get_percent), IsDigit(check_percent=True), IsAdmin())
 async def get_percent(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMPercentEdit.check_percent)
     await state.update_data(percent=float(message.text))
@@ -107,3 +109,40 @@ async def sure_revoke_mission(message: Message, state: FSMContext, bot: Bot) -> 
                                                         **revokeMission))
     await bot.delete_message(chat_id=message.from_user.id, message_id=message_id)
     await message.delete()
+
+
+@router.message(StateFilter(FSMEditPatterns.get_token_name), IsAdmin())
+async def get_pattern(message: Message, state: FSMContext) -> None:
+    await state.set_state(FSMEditPatterns.get_pattern)
+    await state.update_data(token=message.text)
+    await message.answer(text=botMessages['getPattern'].format(
+        token=message.text
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    back='settings',
+                                                    back_name=backLexicon['cancelLexicon']))
+
+
+@router.message(StateFilter(FSMEditPatterns.get_pattern), IsAdmin())
+async def get_pattern(message: Message, state: FSMContext) -> None:
+    await state.update_data(pattern=message.text)
+    await state.set_state(FSMEditPatterns.check_sure)
+    token = (await state.get_data())['token']
+    await message.answer(text=botMessages['sureAddedPattern'].format(
+        token=token,
+        pattern=message.text
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    back='settings',
+                                                    back_name=backLexicon['cancelLexicon'],
+                                                    **yesLexicon))
+
+
+@router.message(StateFilter(FSMEditMinSum.get_sum), IsDigit(), IsAdmin())
+async def sure_update_min_sum(message: Message, state: FSMContext) -> None:
+    await state.set_state(FSMEditMinSum.check_sure)
+    await state.update_data(minSum=float(message.text))
+    await message.answer(text=botMessages['sureUpdateMinSum'].format(
+        minSum=float(message.text)
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    back='settings',
+                                                    back_name=backLexicon['cancelLexicon'],
+                                                    **yesLexicon))

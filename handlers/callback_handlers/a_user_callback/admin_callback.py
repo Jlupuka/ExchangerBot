@@ -2,7 +2,7 @@ from aiogram import Router, Bot, exceptions
 from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, FSInputFile, BotName
+from aiogram.types import CallbackQuery, FSInputFile, user as user_aiogram
 
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
@@ -12,17 +12,18 @@ from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import botMessages, startCallbackAdmin, settingsMenu, workType, missions, walletsMenu, \
     checkCorrectAddWallet, successfullyMessage, addressMenu, sureLexicon, addressDelete, errorLexicon, addressEdit, \
     statusWork, backLexicon, sendMission, changeStatus, checkMark, informationMissionUser, listMissions, \
-    revokeMission, revokeButton, startCallbackUser
+    revokeMission, revokeButton, startCallbackUser, patternsMenu
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import AdminCallbackFactory, MissionCallbackFactory, UserCallbackFactory, KYCCallbackFactory
 from services import logger
+from services.dataService import JsonService
 from services.qrCodeService import QRCodeService
 
 from services.submissionService import SubmissionService
 from services.userService import UserService
 from services.walletService import WalletService
-from states.states import FSMAddWallet, FSMPercentEdit, FSMRevokeMission
+from states.states import FSMAddWallet, FSMEditMinSum, FSMEditPatterns, FSMPercentEdit, FSMRevokeMission
 
 router: Router = Router()
 
@@ -40,20 +41,36 @@ async def start_handler_admin(callback: CallbackQuery, callback_data: AdminCallb
     )
 
 
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'information'), IsAdmin())
+async def information_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, bot: Bot) -> None:
+    await callback.message.edit_text(text=botMessages['informationAdmin'].format(
+        botName=(await bot.get_me()).username
+    ),
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=callback_data.back_page))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'instruction'), IsAdmin())
+async def instruction_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+    await callback.message.edit_text(text=botMessages['instructionAdmin'],
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=callback_data.back_page))
+
+
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'statistics'), IsAdmin())
 async def statistics_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, bot: Bot) -> None:
     data: dict[str: int | float | str] = await SubmissionsAPI.get_statistic_data()
     gain_statistic: dict[str: int | float | str] = await UserService.statistic_admin()
     result = {**data, **gain_statistic}
-    bot_name: BotName = await bot.get_my_name()
-    await bot.get_me()
-    await callback.message.edit_text(text=botMessages['statisticAdmin'].format(**result, botName=bot_name.name),
+    bot_data: user_aiogram.User = await bot.get_me()
+    await callback.message.edit_text(text=botMessages['statisticAdmin'].format(**result, botName=bot_data.username,),
                                      reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
                                                                                   back=callback_data.back_page))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page.in_({'settings', 'workType'})), IsAdmin())
-async def settings_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+async def settings_handler(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.clear()
     admin_work_type: bool = await AdminAPI.get_workType(user_id=callback.from_user.id)
     if callback_data.page == 'workType':
         admin_work_type = await AdminAPI.update_workType(user_id=callback.from_user.id, work_type=admin_work_type)
@@ -75,6 +92,101 @@ async def settings_handler(callback: CallbackQuery, callback_data: AdminCallback
                                                                                   if admin_work_type
                                                                                   else (2, 1),
                                                                                   **buttons))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'editMinSum'), IsAdmin())
+async def edit_min_sum(callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext) -> None:
+    await state.set_state(FSMEditMinSum.get_sum)
+    await callback.message.edit_text(text=botMessages['editMinSum'],
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back=callback_data.back_page,
+                                                                                  back_name=backLexicon['backMainMenu']
+                                                                                  ))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), IsAdmin(), StateFilter(FSMEditMinSum.check_sure))
+async def update_min_sum(callback: CallbackQuery, state: FSMContext) -> None:
+    json_data = await JsonService.read_json()
+    minSum = (await state.get_data())['minSum']
+    json_data['minSum'] = minSum
+    await JsonService.save_json(data=json_data)
+    await callback.message.edit_text(text=botMessages['updateMinSum'].format(
+        updateMinSum=minSum
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    back='settings'))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'editPatterns'), IsAdmin())
+async def choice_patterns(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(FSMEditPatterns.choice_pattern)
+    patterns = await JsonService.preprocess_patterns_for_button()
+    patterns_text = await JsonService.preprocess_patterns_for_text()
+    sizes: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(patterns), count_any_button=2)
+    patternsMenu_copy = patternsMenu.copy()
+    await callback.message.edit_text(text=botMessages['editPatterns'].format(
+        patterns=patterns_text
+    ), reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                    back='settings',
+                                                    sizes=sizes,
+                                                    **{**patterns, **patternsMenu_copy}
+                                                    ))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'addPattern'), IsAdmin())
+async def add_pattern(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(FSMEditPatterns.get_token_name)
+    await callback.message.edit_text(text=botMessages['getTokenPattern'],
+                                     reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                  back='settings',
+                                                                                  back_name=backLexicon[
+                                                                                      'cancelLexicon']))
+
+
+@router.callback_query(AdminCallbackFactory.filter(F.page == 'yes'), IsAdmin(),
+                       StateFilter(FSMEditPatterns.check_sure))
+async def add_pattern(callback: CallbackQuery, state: FSMContext) -> None:
+    state_data = await state.get_data()
+    patterns = await JsonService.get_specific_data(name_data='patterns')
+    if state_data['token'] not in patterns:
+        patterns[state_data['token']] = state_data['pattern']
+        await JsonService.save_token_patterns(patterns=patterns)
+        patterns_button = await JsonService.preprocess_patterns_for_button()
+        patterns_text = await JsonService.preprocess_patterns_for_text()
+        sizes: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(patterns), count_any_button=2)
+        patternsMenu_copy = patternsMenu.copy()
+        await callback.message.edit_text(text=botMessages['addPatterns'].format(
+            patterns=patterns_text
+        ),
+            reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                         back='settings',
+                                                         sizes=sizes,
+                                                         **{**patterns_button, **patternsMenu_copy}
+                                                         ))
+    else:
+        await callback.message.edit_text(text=errorLexicon['repeatPattern'],
+                                         reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                                                      back='settings'))
+
+
+@router.callback_query(AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory), IsAdmin(),
+                       StateFilter(FSMEditPatterns.choice_pattern))
+async def delete_pattern(callback: CallbackQuery, callback_data: AdminCallbackFactory) -> None:
+    patterns = await JsonService.get_specific_data(name_data='patterns')
+    token_delete = patterns.pop(callback_data.page)
+    await JsonService.save_token_patterns(patterns=patterns)
+    patterns_button = await JsonService.preprocess_patterns_for_button()
+    patterns_text = await JsonService.preprocess_patterns_for_text()
+    sizes: tuple[int, ...] = await WalletService.get_size_wallet(len_wallet=len(patterns), count_any_button=2)
+    patternsMenu_copy = patternsMenu.copy()
+    await callback.message.edit_text(text=botMessages['deletePatterns'].format(
+        deletePattern=f'{callback_data.page} - {token_delete}',
+        patterns=patterns_text
+    ),
+        reply_markup=await Factories.create_fac_menu(AdminCallbackFactory,
+                                                     back='settings',
+                                                     sizes=sizes,
+                                                     **{**patterns_button, **patternsMenu_copy}
+                                                     ))
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == 'wallets'), IsAdmin())
