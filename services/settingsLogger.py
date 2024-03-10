@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import pathlib
 from datetime import datetime
 
 from services.qrCodeService import QRCodeService
