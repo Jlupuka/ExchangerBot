@@ -56,3 +56,15 @@ class FSMRevokeMission(StatesGroup):
 
 class FSMVerify(StatesGroup):
     get_photo = State()
+
+
+class FSMEditMinSum(StatesGroup):
+    get_sum = State()
+    check_sure = State()
+
+
+class FSMEditPatterns(StatesGroup):
+    get_pattern = State()
+    get_token_name = State()
+    choice_pattern = State()
+    check_sure = State()
