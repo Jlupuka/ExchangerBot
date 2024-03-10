@@ -7,7 +7,8 @@ from aiogram.types import Message, CallbackQuery
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
-from services.cryptoService import CryptoCheck, min_sum
+from services.cryptoService import CryptoCheck
+from services.dataService import JsonService
 from services.walletService import WalletService
 
 
@@ -91,8 +92,9 @@ class IsDigit(BaseFilter):
     Checks whether the entered message is an integer or a real number
     """
 
-    def __init__(self, check_min: bool = False) -> None:
+    def __init__(self, check_min: bool = False, check_percent: bool = False) -> None:
         self.check_min = check_min
+        self.check_percent = check_percent
 
     async def __call__(self, message: Message, state: FSMContext) -> bool:
         """
@@ -104,8 +106,9 @@ class IsDigit(BaseFilter):
         is_number = await WalletService.check_number(input_str=message.text)
         if is_number:
             if self.check_min is False:
-                return is_number
+                return 1.01 <= float(message.text) <= 1.70 if self.check_percent else is_number
             state_data = await state.get_data()
+            min_sum = await JsonService.get_specific_data(name_data='minSum')
             return await (CryptoCheck.transaction_amount(amount=float(message.text),
                                                          currency_to='RUB',
                                                          currency_from=state_data['currency_from'].upper())) >= min_sum
