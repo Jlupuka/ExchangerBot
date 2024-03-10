@@ -50,7 +50,7 @@ class UserService:
                 'totalAmount': total_amount,
                 'averageAmount': round(total_amount / count_each_mission['COMPLETED'], 2) if count_each_mission[
                     'COMPLETED'] else 0,
-                'typeTransaction': max(favorite_category)}
+                'typeTransaction': max(favorite_category) if favorite_category else None}
 
     @staticmethod
     async def verif_number() -> int:

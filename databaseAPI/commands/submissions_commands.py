@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import func, select, update, delete, distinct
 from sqlalchemy.engine import Row
 from sqlalchemy.engine.result import ChunkedIteratorResult

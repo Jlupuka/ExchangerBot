@@ -22,6 +22,10 @@ class QRCodeService:
                 payment_link = f'ethereum:{address}?value={amount}'
             case 'XMR':
                 payment_link = f'monero:{address}?tx_amount={amount}&tx_description={description}'
+            case 'TRX':
+                payment_link = f'tron:{address}?amount={amount}'
+            case 'DOGE':
+                payment_link = f'doge:{address}?amount={amount}'
             case _:
                 raise NotFoundCryptoToken(f'The network {crypto_currency} is not in the system')
         qr: QRCode = qrcode.QRCode(

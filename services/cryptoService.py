@@ -6,22 +6,12 @@ import aiohttp
 
 from CastomExceptions.castomException import NotFoundCryptoToken, BadRequest, BadCryptoAddress
 from services import logger
-from services.cardService import CardCheck
+from services.dataService import JsonService
 
-# Define the regex patterns for each cryptocurrency
-token_patterns = {
-    'btc': r'^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$',
-    'eth': r'0x[a-fA-F0-9]{40}$',
-    'sol': r'^([1-9A-HJ-NP-Za-km-z]{44})$',
-    'doge': r'D[a-zA-Z1-9]{33}$',
-    'tron': r'T[a-zA-Z0-9]{33}$',
-    'xmr': r'[84][0-9AB][1-9A-HJ-NP-Za-km-z]{93}$',
-    'rub': CardCheck.validate_luhn,
-    'спб': r'^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$'
+token_translate = {
+    'XMR': 'monero',
+    'TRX': 'tron'
 }
-
-min_sum = 5000  # ₽
-commission_sum = 10  # $
 
 
 class CryptoCheck:
@@ -66,10 +56,11 @@ class CryptoCheck:
 
     @staticmethod
     async def currency_rate(currency_from: str, currency_to: str, margins: float = 1.05) -> float:
-        if currency_to == 'XMR':
-            if currency_from == 'XMR':
+        if currency_to in {'XMR', 'TRX'}:
+            if currency_from in {'XMR', 'TRX'}:
                 return margins
-            currency = round(await CryptoCheck.get_currency_by_coingecko(currency_to=currency_from.lower()) * margins,
+            currency = round(await CryptoCheck.get_currency_by_coingecko(currency_from=token_translate[currency_to],
+                                                                         currency_to=currency_from.lower()) * margins,
                              7)
             return round(currency, 2) if currency_from in {'USD', 'RUB'} else round(currency, 7)
         return (1 / float((await CryptoCheck.ticker(currency_from))['data']['rates'][currency_to])) * margins
@@ -84,7 +75,7 @@ class CryptoCheck:
             }
             async with session.get(url=url, params=params) as response:
                 data = await response.json()
-                currency_rate = data['monero'][currency_to]
+                currency_rate = data[currency_from][currency_to]
                 return float(currency_rate)
 
     @staticmethod
@@ -111,8 +102,8 @@ class CryptoCheck:
         except KeyError:
             logger.error(f'The \033[35maddress=\033[0m'
                          f'\033[33m{wallet_address}\033[0m of this '
-                         f'\033[35mnetwork=\033[0m\033[33m{token}\033[0m, '
-                         f'\033[35mcurrency=\033[0m\033[33m{currency}\033[0m is not authentic')
+                         f'\033[35m network=\033[0m\033[33m{token}\033[0m, '
+                         f'\033[35m currency=\033[0m\033[33m{currency}\033[0m is not authentic')
 
     @staticmethod
     async def get_commission(currency: str) -> float:
@@ -139,7 +130,7 @@ class CryptoCheck:
 
     @staticmethod
     async def validate_crypto_address(token: str, address: str) -> tuple[bool, Type[NotFoundCryptoToken]] | tuple[
-                                                                    bool, Type[BadCryptoAddress]] | tuple[bool, None]:
+        bool, Type[BadCryptoAddress]] | tuple[bool, None]:
         """
         Checks if the token and crypto address are valid
         :param token: (str) crypto token
@@ -147,11 +138,12 @@ class CryptoCheck:
         :return: Logical expression, in case of error - error class
         """
         token = token.lower()
+        patterns = await JsonService.get_token_patterns()
         if token == 'rub':
-            return token_patterns['rub'](address), None
-        if token not in token_patterns:
+            return patterns['rub'](address), None
+        if token not in patterns:
             return False, NotFoundCryptoToken
-        pattern = token_patterns[token]
+        pattern = patterns[token]
         if not re.match(pattern, address):
             return False, BadCryptoAddress
         return True, None
