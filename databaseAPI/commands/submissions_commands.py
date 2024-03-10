@@ -1,5 +1,6 @@
-from typing import Optional
-from sqlalchemy import func, select, update, delete
+from datetime import timedelta
+from typing import Optional, List
+from sqlalchemy import func, select, update, delete, distinct
 from sqlalchemy.engine import Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
@@ -154,3 +155,46 @@ class SubmissionsAPI:
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
+
+    @staticmethod
+    async def get_statistic_data() -> dict:
+        async with get_session() as session:
+            now = func.NOW()
+            queries = {
+                'newUserToDay': select(func.count()).where(func.DATE(Users.DateTime) == func.DATE(now)),
+                'newUserToWeek': select(func.count()).where(Users.DateTime >= now - timedelta(weeks=1)),
+                'newUserToMonth': select(func.count()).where(Users.DateTime >= now - timedelta(days=30)),
+                'UserTotal': select(func.count(Users.Id)),
+                'countExchangeUser': select(func.count(distinct(Users.UserId))).join(Submissions),
+                'exchangeToDay': select(func.count()).where(Submissions.DateTime >= now - timedelta(days=1),
+                                                            Submissions.Status == 'COMPLETED'),
+                'exchangeToWeek': select(func.count()).where(Submissions.DateTime >= now - timedelta(weeks=1),
+                                                             Submissions.Status == 'COMPLETED'),
+                'exchangeToMonth': select(func.count()).where(Submissions.DateTime >= now - timedelta(days=30),
+                                                              Submissions.Status == 'COMPLETED'),
+                'exchangeTotal': select(func.count(Submissions.Id)),
+                'topWorker': select(Users.UserId).join(Submissions, Users.UserId == Submissions.AdminId).group_by(
+                    Users.UserId).order_by(func.count(Submissions.Id).desc()).limit(1),
+                'topExchangerUserID': select(Users.UserId).join(Submissions).where(
+                    Submissions.Status == 'COMPLETED').group_by(Users.UserId).order_by(
+                    func.count().desc()).limit(1),
+                'topTypeExchange': select(Submissions.TypeTrans).group_by(Submissions.TypeTrans).order_by(
+                    func.count().desc()).limit(1),
+                'topTypeCurrency': select(Submissions.CurrencyTo).group_by(Submissions.CurrencyTo).order_by(
+                    func.count().desc()).limit(1)
+            }
+            results = dict()
+            for key, query in queries.items():
+                result: ChunkedIteratorResult = await session.execute(query)
+                results[key] = result.scalar()
+            return results
+
+    @staticmethod
+    async def data_completed_submissions() -> list[Row]:
+        async with get_session() as session:
+            sql: str = select(Submissions, WalletAddress, Users).join(WalletAddress).join(Users).where(
+                Submissions.Status == 'COMPLETED'
+            )
+            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
+            response: list[Row] = mission_chunk.all()
+            return response
