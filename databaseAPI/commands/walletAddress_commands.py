@@ -15,7 +15,6 @@ class WalletAPI:
             sql: str = func.count(WalletAddress.Id)
             count_chunk: ChunkedIteratorResult = await session.execute(sql)
             count: int = count_chunk.scalar()
-            logger.info(f"Number of wallets in the database: {count}")
             return count
 
     @staticmethod

@@ -28,7 +28,7 @@ engine: AsyncEngine = create_async_engine(
 )
 
 
-async def create_base() -> NoReturn:
+async def create_base() -> None:
     """
     Creates tables in the database
     :return: None

@@ -1,4 +1,3 @@
-from typing import NoReturn
 from aiogram import Bot
 from aiogram.types import BotCommand
 from logging import Logger
@@ -6,7 +5,7 @@ from logging import Logger
 from lexicon.lexicon import LexiconCommands
 
 
-async def load_main_command(bot: Bot, logger: Logger) -> NoReturn:
+async def load_main_command(bot: Bot, logger: Logger) -> None:
     main_commands: list = [
         BotCommand(command=command, description=description)
         for command, description in LexiconCommands.items()
