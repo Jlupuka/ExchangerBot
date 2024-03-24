@@ -22,14 +22,12 @@ class UserAPI:
         async with get_session() as session:
             admin_flag = user_id in config.AdminId.ADMINID
             user_object: Users = Users(
-                UserId=user_id,
-                Admin=admin_flag,
-                KYC=True if admin_flag else False
+                UserId=user_id, Admin=admin_flag, KYC=True if admin_flag else False
             )
             session.add(user_object)
             try:
                 await session.commit()
-                logger.info(f'Added user. user_id={user_id}')
+                logger.info(f"Added user. user_id={user_id}")
                 return user_object
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
@@ -43,9 +41,7 @@ class UserAPI:
         :return: Users | None
         """
         async with get_session() as session:
-            sql = select(Users).where(
-                Users.UserId == user_id
-            )
+            sql = select(Users).where(Users.UserId == user_id)
             user_chunk: ChunkedIteratorResult = await session.execute(sql)
             user_scalar: list = user_chunk.scalars().all()
             try:

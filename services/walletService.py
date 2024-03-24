@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Type
+from typing import Union
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.tables import WalletAddress
@@ -10,19 +10,29 @@ from lexicon.lexicon import cryptoSymbol
 class WalletService:
     @staticmethod
     async def get_wallets(
-            func: Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_by_type],
-            type_wallet: str = None) -> dict[str: str]:
+        func: Union[
+            WalletAPI.get_all_name_net_wallets, WalletAPI.get_all_name_net_by_type
+        ],
+        type_wallet: str = None,
+    ) -> dict[str:str]:
         """
         Returns all short names of currencies that exist in the database
         :param type_wallet: (str) passed if the WalletAPI.get_all_name_net_by_type
         :param func: (Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_by_type])
         :return: (dict[str]) key is the name in lower case, value - in upper case
         """
-        wallets_data: set[str] = await func() if type_wallet is None else await func(type_wallet=type_wallet)
-        return {wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}' for wallet in sorted(wallets_data)}
+        wallets_data: set[str] = (
+            await func() if type_wallet is None else await func(type_wallet=type_wallet)
+        )
+        return {
+            wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}'
+            for wallet in sorted(wallets_data)
+        }
 
     @staticmethod
-    async def get_size_wallet(len_wallet: int, count_any_button: int = 0) -> tuple[int, ...]:
+    async def get_size_wallet(
+        len_wallet: int, count_any_button: int = 0
+    ) -> tuple[int, ...]:
         """
         Returns a tuple of numbers, where the numbers indicate how many buttons will be on one line
         :param len_wallet: (int) how many main buttons there are
@@ -38,7 +48,9 @@ class WalletService:
         return tuple(result_wallet_size + [1] * count_any_button)
 
     @staticmethod
-    async def preprocess_wallets(wallets: list[tuple[int, str]]) -> tuple[str, dict[str: str]]:
+    async def preprocess_wallets(
+        wallets: list[tuple[int, str]]
+    ) -> tuple[str, dict[str:str]]:
         """
         Converts wallet data to text for easier to understand information and returns a dictionary to create buttons
         :param wallets: (list[tuple[int, str]]) list where values are a tuple with wallet data - id, address
@@ -46,14 +58,19 @@ class WalletService:
         """
         result_text = str()
         result_dict = dict()
-        line_feed = '\n'
+        line_feed = "\n"
         for index in range(len_wallets := len(wallets)):
-            result_text += (f'{wallets[index][0]}. <code>{wallets[index][1]}'
-                            f'</code>{"" if index == len_wallets - 1 else line_feed}')
-            result_dict[f'TokenId-{wallets[index][0]}'] = (f'🆔 {wallets[index][0]} | '
-                                                           f'💳 {wallets[index][1][:6]}...{wallets[index][1][-4:]}')
-        return '\n'.join(sorted(result_text.split('\n'))), {address_id: result_dict[address_id] for address_id in
-                                                            sorted(result_dict)}
+            result_text += (
+                f"{wallets[index][0]}. <code>{wallets[index][1]}"
+                f'</code>{"" if index == len_wallets - 1 else line_feed}'
+            )
+            result_dict[f"TokenId-{wallets[index][0]}"] = (
+                f"🆔 {wallets[index][0]} | "
+                f"💳 {wallets[index][1][:6]}...{wallets[index][1][-4:]}"
+            )
+        return "\n".join(sorted(result_text.split("\n"))), {
+            address_id: result_dict[address_id] for address_id in sorted(result_dict)
+        }
 
     @staticmethod
     async def check_number(input_str: str) -> bool:
@@ -62,11 +79,13 @@ class WalletService:
         :param input_str: (str) text
         :return: (bool) verification result
         """
-        if re.match(r'^\d*[.,]?\d+$', input_str):
+        if re.match(r"^\d*[.,]?\d+$", input_str):
             return True
         return False
 
     @staticmethod
     async def random_wallet(name_net: str) -> WalletAddress:
-        wallets: list[WalletAddress] = await WalletAPI.get_wallets_for_mission(name_net=name_net)
+        wallets: list[WalletAddress] = await WalletAPI.get_wallets_for_mission(
+            name_net=name_net
+        )
         return random.choice(wallets)

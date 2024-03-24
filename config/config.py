@@ -39,25 +39,22 @@ def load_config(path: str | None = None) -> Config:
     env = Env()
     env.read_env(path=path)
     return Config(
-        TelegramBot=TokenBot(
-            TOKEN=env('BOT-TOKEN')
-        ),
+        TelegramBot=TokenBot(TOKEN=env("BOT-TOKEN")),
         DataBase=PostgreSQL(
-            USER=env('DB-USER'),
-            PASSWORD=env('DB-PASSWORD'),
-            HOST=env('DB-HOST'),
-            PORT=env('DB-PORT'),
-            NAME=env('DB-NAME')
+            USER=env("DB-USER"),
+            PASSWORD=env("DB-PASSWORD"),
+            HOST=env("DB-HOST"),
+            PORT=env("DB-PORT"),
+            NAME=env("DB-NAME"),
         ),
-        Redis=RedisStorge(
-            HOST=env('REDIS-HOST'),
-            PORT=env('REDIS-PORT')
-        ),
+        Redis=RedisStorge(HOST=env("REDIS-HOST"), PORT=env("REDIS-PORT")),
         AdminId=Admins(
-            ADMINID=list(int(adm_id)
-                         for adm_id in map(
-                lambda admins: admins.strip(),
-                env('ADMIN-ID').split(','))
-                         if adm_id)
-        )
+            ADMINID=list(
+                int(adm_id)
+                for adm_id in map(
+                    lambda admins: admins.strip(), env("ADMIN-ID").split(",")
+                )
+                if adm_id
+            )
+        ),
     )

@@ -10,7 +10,5 @@ router = Router()
 @router.message()
 async def send_any_message(message: Message) -> None:
     await message.delete()
-    await message.answer(
-        text=botMessages['anyMessage']
-    )
+    await message.answer(text=botMessages["anyMessage"])
     logger.info("userID=%s, messageText=(%s)", message.from_user.id, message.text)

@@ -1,8 +1,10 @@
 from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from databaseAPI.commands.userCommands.user_commands import UserAPI
+from databaseAPI.tables import Users
 
 
 class DataBaseCheckUserMiddleware(BaseMiddleware):
@@ -10,10 +12,12 @@ class DataBaseCheckUserMiddleware(BaseMiddleware):
         super().__init__()
 
     async def __call__(
-            self,
-            handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-            event: Message,
-            data: Dict[str, Any]
+        self,
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        event: Message,
+        data: Dict[str, Any],
     ) -> Any:
-        await UserAPI.check_user(event.from_user.id)
+        user_obj: Users = await UserAPI.check_user(event.from_user.id)
+        state: FSMContext = data["state"]
+        await state.update_data(userIsAdmin=user_obj.Admin)
         return await handler(event, data)

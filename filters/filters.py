@@ -1,10 +1,9 @@
-from typing import Type
+from typing import Type, Union
 
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck
@@ -20,13 +19,16 @@ class IsAdmin(BaseFilter):
     def __init__(self, checkAdminWork: bool = False) -> None:
         self.checkAdminWork = checkAdminWork
 
-    async def __call__(self, message: Message) -> bool:
+    async def __call__(
+        self, update: Union[Message | CallbackQuery], state: FSMContext
+    ) -> bool:
         """
         A filter that will check if the user is an administrator or not
-        :param message: aiogram.filters.Message
+        :param update: aiogram.filters.Message
         :return: bool
         """
-        return await AdminAPI.check_admin(user_id=message.from_user.id, check_admin=self.checkAdminWork)
+        is_admin: bool = (await state.get_data())["userIsAdmin"]
+        return is_admin
 
 
 class IsCryptoAddress(BaseFilter):
@@ -42,7 +44,11 @@ class IsCryptoAddress(BaseFilter):
         :return: (bool) Result on whether the address is a cryptocurrency wallet or not
         """
         state_data = await state.get_data()
-        return (await CryptoCheck.validate_crypto_address(token=state_data['currency_to'], address=message.text))[0]
+        return (
+            await CryptoCheck.validate_crypto_address(
+                token=state_data["currency_to"], address=message.text
+            )
+        )[0]
 
 
 class CheckState(BaseFilter):
@@ -64,12 +70,14 @@ class CheckState(BaseFilter):
         :param state: (aiogram.fsm.context.FSMContext) State machine
         :return: (bool) Result to check if there is or not
         """
-        state_data: dict[str: str] = await state.get_data()
+        state_data: dict[str:str] = await state.get_data()
         return state_data.get(self.pattern, False)
 
 
 class IsToken(BaseFilter):
-    def __init__(self, factory: Type[AdminCallbackFactory] | Type[UserCallbackFactory]) -> None:
+    def __init__(
+        self, factory: Type[AdminCallbackFactory] | Type[UserCallbackFactory]
+    ) -> None:
         self.factory = factory
 
     """
@@ -106,10 +114,19 @@ class IsDigit(BaseFilter):
         is_number = await WalletService.check_number(input_str=message.text)
         if is_number:
             if self.check_min is False:
-                return 1.01 <= float(message.text) <= 1.70 if self.check_percent else is_number
+                return (
+                    1.01 <= float(message.text) <= 1.70
+                    if self.check_percent
+                    else is_number
+                )
             state_data = await state.get_data()
-            min_sum = await JsonService.get_specific_data(name_data='minSum')
-            return await (CryptoCheck.transaction_amount(amount=float(message.text),
-                                                         currency_to='RUB',
-                                                         currency_from=state_data['currency_from'].upper())) >= min_sum
+            min_sum = await JsonService.get_specific_data(name_data="minSum")
+            return (
+                await CryptoCheck.transaction_amount(
+                    amount=float(message.text),
+                    currency_to="RUB",
+                    currency_from=state_data["currency_from"].upper(),
+                )
+                >= min_sum
+            )
         return False

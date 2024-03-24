@@ -15,7 +15,7 @@ class WalletAPI:
             sql: str = func.count(WalletAddress.Id)
             count_chunk: ChunkedIteratorResult = await session.execute(sql)
             count: int = count_chunk.scalar()
-            logger.info(f'Number of wallets in the database: {count}')
+            logger.info(f"Number of wallets in the database: {count}")
             return count
 
     @staticmethod
@@ -30,9 +30,7 @@ class WalletAPI:
         if not await WalletAPI.get_wallets_data(address=address):
             async with get_session() as session:
                 wallet_object: WalletAddress = WalletAddress(
-                    NameNet=name_net,
-                    Address=address,
-                    typeWallet=type_wallet
+                    NameNet=name_net, Address=address, typeWallet=type_wallet
                 )
                 session.add(wallet_object)
                 try:
@@ -44,23 +42,24 @@ class WalletAPI:
         return False
 
     @staticmethod
-    async def get_wallets_data(name_net: str = None, address: str = None) -> list[tuple[int, str]]:
+    async def get_wallets_data(
+        name_net: str = None, address: str = None
+    ) -> list[tuple[int, str]]:
         async with get_session() as session:
             sql: str = select(WalletAddress).where(
                 WalletAddress.NameNet == name_net
                 if name_net
-                else
-                WalletAddress.Address == address
+                else WalletAddress.Address == address
             )
             wallets_data: ChunkedIteratorResult = await session.execute(sql)
-            return [(wallet.Id, wallet.Address) for wallet in wallets_data.scalars().all()]
+            return [
+                (wallet.Id, wallet.Address) for wallet in wallets_data.scalars().all()
+            ]
 
     @staticmethod
     async def delete_wallet(wallet_id: int) -> None:
         async with get_session() as session:
-            sql: str = delete(WalletAddress).where(
-                WalletAddress.Id == wallet_id
-            )
+            sql: str = delete(WalletAddress).where(WalletAddress.Id == wallet_id)
             try:
                 await session.execute(sql)
                 await session.commit()
@@ -70,11 +69,11 @@ class WalletAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_wallet_data(wallet_id: int, get_data: str = None) -> float | WalletAddress:
+    async def get_wallet_data(
+        wallet_id: int, get_data: str = None
+    ) -> float | WalletAddress:
         async with get_session() as session:
-            sql: str = select(WalletAddress).where(
-                WalletAddress.Id == wallet_id
-            )
+            sql: str = select(WalletAddress).where(WalletAddress.Id == wallet_id)
             wallet_chunk: ChunkedIteratorResult = await session.execute(sql)
             wallet: WalletAddress = wallet_chunk.scalars().one()
             try:
@@ -86,10 +85,10 @@ class WalletAPI:
     @staticmethod
     async def update_work_type_wallet(wallet_id: int, work_type: bool) -> bool:
         async with get_session() as session:
-            sql: str = update(WalletAddress).where(
-                WalletAddress.Id == wallet_id
-            ).values(
-                Status=work_type
+            sql: str = (
+                update(WalletAddress)
+                .where(WalletAddress.Id == wallet_id)
+                .values(Status=work_type)
             )
             try:
                 await session.execute(sql)
@@ -102,10 +101,10 @@ class WalletAPI:
     @staticmethod
     async def update_percent(wallet_id: int, percent: float) -> None:
         async with get_session() as session:
-            sql: str = update(WalletAddress).where(
-                WalletAddress.Id == wallet_id
-            ).values(
-                Percent=percent
+            sql: str = (
+                update(WalletAddress)
+                .where(WalletAddress.Id == wallet_id)
+                .values(Percent=percent)
             )
             try:
                 await session.execute(sql)
@@ -130,11 +129,12 @@ class WalletAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_wallets_for_mission(name_net: str, work_type: bool = True) -> list[WalletAddress]:
+    async def get_wallets_for_mission(
+        name_net: str, work_type: bool = True
+    ) -> list[WalletAddress]:
         async with get_session() as session:
             sql: str = select(WalletAddress).where(
-                WalletAddress.NameNet == name_net,
-                WalletAddress.Status == work_type
+                WalletAddress.NameNet == name_net, WalletAddress.Status == work_type
             )
             wallets_chunk: ChunkedIteratorResult = await session.execute(sql)
             wallets_scalar: list[WalletAddress] = wallets_chunk.scalars().all()

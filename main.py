@@ -26,7 +26,9 @@ async def main() -> None:
 
     storge: RedisStorage = RedisStorage(redis=redis)
 
-    bot_properties: DefaultBotProperties = DefaultBotProperties(parse_mode=ParseMode.HTML)
+    bot_properties: DefaultBotProperties = DefaultBotProperties(
+        parse_mode=ParseMode.HTML
+    )
 
     bot: Bot = Bot(token=config.TelegramBot.TOKEN, default=bot_properties)
     dp: Dispatcher = Dispatcher(storage=storge)
@@ -40,11 +42,11 @@ async def main() -> None:
     await LoadService.load_middlewares(dp=dp)
     bot.session.middleware(RequestLogging(ignore_methods=[GetUpdates]))
 
-    logger.info('Starting bot')
+    logger.info("Starting bot")
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

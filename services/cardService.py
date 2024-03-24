@@ -21,7 +21,7 @@ class CardCheck:
 
     @staticmethod
     async def preprocess_phone(phone: str) -> str:
-        formatted_number = re.sub(r'[+\s\-()]', '', phone)
-        if formatted_number.startswith('8') or formatted_number.startswith('7'):
-            formatted_number = '+7' + formatted_number[1:]
+        formatted_number = re.sub(r"[+\s\-()]", "", phone)
+        if formatted_number.startswith("8") or formatted_number.startswith("7"):
+            formatted_number = "+7" + formatted_number[1:]
         return formatted_number

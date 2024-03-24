@@ -13,21 +13,26 @@ from CastomExceptions.castomException import NotFoundCryptoToken
 
 class QRCodeService:
     @staticmethod
-    async def create_crypto_payment_qrcode(crypto_currency: str, amount: float,
-                                           address: str, description: str | int = None) -> str:
+    async def create_crypto_payment_qrcode(
+        crypto_currency: str, amount: float, address: str, description: str | int = None
+    ) -> str:
         match crypto_currency:
-            case 'BTC':
-                payment_link = f'bitcoin:{address}?amount={amount}'
-            case 'ETH':
-                payment_link = f'ethereum:{address}?value={amount}'
-            case 'XMR':
-                payment_link = f'monero:{address}?tx_amount={amount}&tx_description={description}'
-            case 'TRX':
-                payment_link = f'tron:{address}?amount={amount}'
-            case 'DOGE':
-                payment_link = f'doge:{address}?amount={amount}'
+            case "BTC":
+                payment_link = f"bitcoin:{address}?amount={amount}"
+            case "ETH":
+                payment_link = f"ethereum:{address}?value={amount}"
+            case "XMR":
+                payment_link = (
+                    f"monero:{address}?tx_amount={amount}&tx_description={description}"
+                )
+            case "TRX":
+                payment_link = f"tron:{address}?amount={amount}"
+            case "DOGE":
+                payment_link = f"doge:{address}?amount={amount}"
             case _:
-                raise NotFoundCryptoToken(f'The network {crypto_currency} is not in the system')
+                raise NotFoundCryptoToken(
+                    f"The network {crypto_currency} is not in the system"
+                )
         qr: QRCode = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -36,11 +41,13 @@ class QRCodeService:
         )
         qr.add_data(payment_link)
         qr.make(fit=True)
-        await QRCodeService.create_directory('tempQRCode')
-        file_name = f'tempQRCode/{crypto_currency}_{amount}_{address}_{datetime.datetime.now()}.png'
-        qr.make_image(image_factory=StyledPilImage,
-                      color_mask=RadialGradiantColorMask(),
-                      module_drawer=RoundedModuleDrawer(radius_ratio=1)).save(file_name)
+        await QRCodeService.create_directory("tempQRCode")
+        file_name = f"tempQRCode/{crypto_currency}_{amount}_{address}_{datetime.datetime.now()}.png"
+        qr.make_image(
+            image_factory=StyledPilImage,
+            color_mask=RadialGradiantColorMask(),
+            module_drawer=RoundedModuleDrawer(radius_ratio=1),
+        ).save(file_name)
         return file_name
 
     @staticmethod
