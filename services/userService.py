@@ -19,9 +19,10 @@ class UserService:
         return random.choice(all_work_admins) if all_work_admins else None
 
     @staticmethod
-    async def format_date_string(date_string: str) -> str:
-        dt_obj = datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S.%f")
-        formatted_string = dt_obj.strftime("%Y %B %d %H:%M")
+    async def format_date_string(date: datetime.datetime) -> str | None:
+        formatted_string = None
+        if date:
+            formatted_string = date.strftime("%Y %B %d %H:%M")
         return formatted_string
 
     @staticmethod
@@ -81,34 +82,35 @@ class UserService:
             "gainTotal": 0,
             "maxExchangeAmount": 0,
             "maxExchangeUserID": 0,
-            "maxExchangeDateTime": 0,
+            "maxExchangeDateTime": None,
         }
         cache_currency: dict[int, float] = {"СПБ": 1, "RUB": 1}
         now = datetime.datetime.utcnow()
-        for mission, wallet, user in completed_submissions:
+        for mission in completed_submissions:
             amount_user = mission.AmountFrom
+            wallet, user = mission.wallet, mission.user
             if cache_currency.get(wallet.NameNet) is None:
                 cache_currency[wallet.NameNet] = await CryptoCheck.currency_rate(
                     currency_to=wallet.NameNet, currency_from="RUB", margins=1
                 )
             amount_user *= cache_currency[wallet.NameNet]
             amount_admin = amount_user * (wallet.Percent - 1)
-            if mission.DateTime >= now - datetime.timedelta(days=1):
+            if mission.created_at >= now - datetime.timedelta(days=1):
                 result["gainToDay"] += amount_admin
-            if mission.DateTime >= now - datetime.timedelta(weeks=1):
+            if mission.created_at >= now - datetime.timedelta(weeks=1):
                 result["gainToWeek"] += amount_admin
-            if mission.DateTime >= now - datetime.timedelta(days=30):
+            if mission.created_at >= now - datetime.timedelta(days=30):
                 result["gainToMonth"] += amount_admin
             if result["maxExchangeAmount"] < amount_user:
                 result["maxExchangeAmount"] = amount_user
                 result["maxExchangeUserID"] = user.UserId
-                result["maxExchangeDateTime"] = mission.DateTime
+                result["maxExchangeDateTime"]: datetime = mission.created_at
             result["gainTotal"] += amount_admin
         result["gainToDay"] = round(result["gainToDay"], 2)
         result["gainToWeek"] = round(result["gainToWeek"], 2)
         result["gainToMonth"] = round(result["gainToMonth"], 2)
         result["gainTotal"] = round(result["gainTotal"], 2)
         result["maxExchangeDateTime"] = await UserService.format_date_string(
-            date_string=str(result["maxExchangeDateTime"])
+            date=result["maxExchangeDateTime"]
         )
         return result

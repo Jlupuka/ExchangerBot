@@ -3,10 +3,11 @@ from typing import Sequence, Any, Union, Type
 from sqlalchemy import func, select, distinct, Select, RowMapping, Update, update, Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from databaseAPI.database import get_session
 from databaseAPI.models import Wallets, Submissions, Users
+from databaseAPI.models.models import Statuses
 from services import logger
 
 
@@ -73,6 +74,7 @@ class SubmissionsAPI:
             sql: Select = (
                 select(*args)
                 .options(joinedload(Submissions.wallet))
+                .options(joinedload(Submissions.user))
                 .join(Wallets, Submissions.wallet)
                 .join(Users, Submissions.user)
                 .where(
@@ -114,29 +116,29 @@ class SubmissionsAPI:
                     Users.created_at >= now - timedelta(days=30)
                 ),
                 "UserTotal": select(func.count(Users.Id)),
-                "countExchangeUser": select(func.count(distinct(Users.UserId)))
-                .join(Submissions, Submissions.user),
+                "countExchangeUser": select(func.count(distinct(Submissions.UserId))),
                 "exchangeToDay": select(func.count()).where(
                     Submissions.created_at >= now - timedelta(days=1),
-                    Submissions.Status == "COMPLETED",
+                    Submissions.Status == Statuses.completed,
                 ),
                 "exchangeToWeek": select(func.count()).where(
                     Submissions.created_at >= now - timedelta(weeks=1),
-                    Submissions.Status == "COMPLETED",
+                    Submissions.Status == Statuses.completed,
                 ),
                 "exchangeToMonth": select(func.count()).where(
                     Submissions.created_at >= now - timedelta(days=30),
-                    Submissions.Status == "COMPLETED",
+                    Submissions.Status == Statuses.completed,
                 ),
                 "exchangeTotal": select(func.count(Submissions.Id)),
                 "topWorker": select(Users.UserId)
-                .join(Submissions, Submissions.admin)
+                .join_from(Submissions, Submissions.admin)
+                .filter(Submissions.AdminId is not None)
                 .group_by(Users.UserId)
-                .order_by(func.count(Submissions.Id).desc())
+                .order_by(func.count().desc())
                 .limit(1),
                 "topExchangerUserID": select(Users.UserId)
-                .join(Submissions, Submissions.user)
-                .where(Submissions.Status == "COMPLETED")
+                .join_from(Submissions, Submissions.user)
+                .filter(Submissions.Status == Statuses.completed)
                 .group_by(Users.UserId)
                 .order_by(func.count().desc())
                 .limit(1),
@@ -153,4 +155,5 @@ class SubmissionsAPI:
             for key, query in queries.items():
                 result: ChunkedIteratorResult = await session.execute(query)
                 results[key] = result.scalar()
+            results["topTypeExchange"] = results["topTypeExchange"].value
             return results

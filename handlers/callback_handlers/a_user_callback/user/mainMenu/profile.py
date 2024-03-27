@@ -21,8 +21,7 @@ async def profile_handler(
             userID=user.UserId,
             KYCStatus=kycVerificationLexicon[user.KYC],
             dateRegistration=await UserService.format_date_string(
-                date_string=str(user.created_at)
-            ),
+                date=user.created_at),
         ),
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory,

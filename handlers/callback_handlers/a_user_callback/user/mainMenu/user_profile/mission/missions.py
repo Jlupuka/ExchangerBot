@@ -49,11 +49,13 @@ async def accepted_missions_handler(
     try:
         mission_status: Statuses = Statuses[callback_data.page]
         missions_data: Sequence[Row | RowMapping | Any] = (
-            await SubmissionsAPI.select_missions(True,
-                                                 callback.from_user.id,
-                                                 callback_data.mission_page,
-                                                 *(Submissions,),
-                                                 Status=mission_status)
+            await SubmissionsAPI.select_missions(
+                True,
+                callback.from_user.id,
+                callback_data.mission_page,
+                *(Submissions,),
+                Status=mission_status,
+            )
         )
         if missions_data:
             mission_count: int = len(missions_data)
@@ -94,12 +96,12 @@ async def accepted_missions_handler(
 async def information_mission(
     callback: CallbackQuery, callback_data: MissionCallbackFactory
 ) -> NoReturn:
-    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(
+    mission_obj, wallet_obj, _ = await SubmissionsAPI.get_mission_data(
         mission_id=callback_data.mission_id
     )
     delete_mission = (
         {f"delete-{mission_obj.Id}": revokeButton["revoke"]}
-        if mission_obj.Status == "WAIT"
+        if mission_obj.Status == Statuses.wait
         else {}
     )
     await callback.message.edit_text(

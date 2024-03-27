@@ -5,7 +5,6 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models.models import TypesWallet
 
 from lexicon.lexicon import botMessages, backLexicon, fiatOrCrypto, writeGetOrSend
