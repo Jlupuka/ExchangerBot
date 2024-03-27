@@ -7,7 +7,8 @@ from aiogram.fsm.context import FSMContext
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.user_commands import UserAPI
-from databaseAPI.tables import Submissions, Users
+from databaseAPI.models import Submissions, Users
+from databaseAPI.models.models import TypesTrans
 from lexicon.lexicon import (
     botMessages,
     backLexicon,
@@ -42,17 +43,19 @@ async def create_mission_FC(
     amount_to: float = state_data["amount_to"]
     amount_from: int = state_data["amount_from"]
     work_wallet: str = state_data["work_walletRequisites"]
-    user_obj: Users = await UserAPI.select_user(callback.from_user.id)
+    user_obj: Users = (await UserAPI.select_user(UserId=callback.from_user.id))[0]
     admin_obj: Users | None = await UserService.random_admin()
-    type_trans: str = state_data["typeTransaction"].replace("-", "/")
+    type_trans: TypesTrans = TypesTrans[
+        state_data["typeTransaction"].replace("-", "_").lower()
+    ]
     mission_obj: Submissions = await SubmissionsAPI.add_application(
-        user_id=user_obj.Id,
-        address_id=wallet_id,
-        currency_to=currency_to,
-        amount_to=amount_to,
-        amount_from=amount_from,
-        typeTrans=type_trans,
-        address_user=wallet_requisites,
+        UserId=user_obj.Id,
+        AddressId=wallet_id,
+        CurrencyTo=currency_to,
+        AmountTo=amount_to,
+        AmountFrom=amount_from,
+        TypeTrans=type_trans,
+        AddressUser=wallet_requisites,
     )
     await callback.message.answer(
         text=botMessages["createMission"].format(
@@ -79,8 +82,8 @@ async def create_mission_FC(
                 userRequisites=wallet_requisites,
                 amountFrom=amount_from,
                 amountTo=amount_to,
-                statusMission=changeStatus[mission_obj.Status.lower()].upper(),
-                dataTime=mission_obj.DateTime,
+                statusMission=changeStatus[mission_obj.Status.value.lower()].upper(),
+                dataTime=mission_obj.created_at,
             ),
             reply_markup=await Factories.create_fac_mission(
                 MissionCallbackFactory,

@@ -1,51 +1,23 @@
 from datetime import timedelta
-from typing import Optional
-from sqlalchemy import func, select, update, delete, distinct
-from sqlalchemy.engine import Row
+from typing import Sequence, Any, Union, Type
+from sqlalchemy import func, select, distinct, Select, RowMapping, Update, update, Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from databaseAPI.database import get_session
-from databaseAPI.tables import WalletAddress
-from databaseAPI.tables.submissionsTable import Submissions
-from databaseAPI.tables.usersTable import Users
+from databaseAPI.models import Wallets, Submissions, Users
 from services import logger
 
 
 class SubmissionsAPI:
     @staticmethod
-    async def select_count_user_missions(user_id: int) -> int:
+    async def add_application(**kwargs) -> Submissions:
         async with get_session() as session:
-            sql: str = (
-                select(func.count(Submissions.Id))
-                .join(Users)
-                .where(Users.UserId == user_id)
-            )
-            count_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return count_chunk.scalar()
-
-    @staticmethod
-    async def add_application(
-        user_id: int,
-        address_id: int,
-        amount_to: int | float,
-        amount_from: int | float,
-        currency_to: str,
-        typeTrans: str,
-        address_user: str,
-    ) -> Submissions:
-        async with get_session() as session:
-            submission_object: Submissions = Submissions(
-                UserId=user_id,
-                AddressId=address_id,
-                AmountTo=amount_to,
-                AmountFrom=amount_from,
-                CurrencyTo=currency_to,
-                TypeTrans=typeTrans,
-                AddressUser=address_user,
-            )
+            submission_object: Submissions = Submissions(**kwargs)
             session.add(submission_object)
             try:
+                await session.flush()
                 await session.commit()
                 return submission_object
             except IntegrityError as IE:
@@ -53,39 +25,20 @@ class SubmissionsAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_count_missions_by_status(mission_status: str) -> int:
+    async def update_mission(
+        submission_id: int, **kwargs: dict[str:Any]
+    ) -> Submissions:
         async with get_session() as session:
-            sql: str = select(func.count(Submissions.Id)).where(
-                Submissions.Status == mission_status
-            )
-            count_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return count_chunk.scalar()
-
-    @staticmethod
-    async def get_count_user_missions_by_status(
-        mission_status: str, user_id: int
-    ) -> int:
-        async with get_session() as session:
-            sql: str = (
-                select(func.count(Submissions.Id))
-                .join(Users)
-                .where(Submissions.Status == mission_status, Users.UserId == user_id)
-            )
-            count_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return count_chunk.scalar()
-
-    @staticmethod
-    async def update_mission_status(submission_id: int, status: str) -> None:
-        async with get_session() as session:
-            sql: str = (
+            sql: Update = (
                 update(Submissions)
                 .where(Submissions.Id == submission_id)
-                .values(Status=status)
+                .values(**kwargs)
+                .returning(Submissions)
             )
             try:
-                await session.execute(sql)
+                submission: Submissions = (await session.scalars(sql)).one()
                 await session.commit()
-                return None
+                return submission
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
@@ -93,98 +46,55 @@ class SubmissionsAPI:
     @staticmethod
     async def get_mission_data(
         mission_id: int,
-    ) -> tuple[Submissions, WalletAddress, Users]:
+    ) -> tuple[Submissions, Wallets, Users]:
         async with get_session() as session:
-            sql: str = (
-                select(Submissions, WalletAddress, Users)
-                .join(WalletAddress)
-                .join(Users)
+            sql: Select = (
+                select(Submissions, Wallets, Users)
+                .join(Wallets, Submissions.wallet)
+                .join(Users, Submissions.user)
                 .where(Submissions.Id == mission_id)
             )
-            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            response: Optional[tuple[Submissions, WalletAddress, Users]] = (
-                mission_chunk.fetchone()
+            mission, wallet, user = (
+                (None, None, None)
+                if not (response := (await session.execute(sql)).first())
+                else response
             )
-            mission, wallet, user = (None, None, None) if not response else response
             return mission, wallet, user
 
     @staticmethod
-    async def get_missions_by_status(
-        mission_status: str, offset: int = 0, pagination: bool = False
-    ) -> list[Submissions]:
+    async def select_missions(
+        pagination: bool,
+        user_id: int = None,
+        offset: int = 0,
+        *args: Type[Union[Wallets, Users, Submissions]],
+        **kwargs: dict[str:Any],
+    ) -> Sequence[Row[Any] | RowMapping | Any]:
         async with get_session() as session:
-            if pagination:
-                sql: str = (
-                    select(Submissions)
-                    .where(Submissions.Status == mission_status)
-                    .limit(8)
-                    .offset(offset * 8)
+            sql: Select = (
+                select(*args)
+                .options(joinedload(Submissions.wallet))
+                .join(Wallets, Submissions.wallet)
+                .join(Users, Submissions.user)
+                .where(
+                    *[
+                        getattr(Submissions, __key) == __value
+                        for __key, __value in kwargs.items()
+                    ]
                 )
-            else:
-                sql = select(Submissions).where(Submissions.Status == mission_status)
-            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return mission_chunk.scalars().all()
-
-    @staticmethod
-    async def get_user_missions_wallets(user_id: int) -> list[Row]:
-        async with get_session() as session:
-            sql: str = (
-                select(Submissions, WalletAddress)
-                .join(WalletAddress)
-                .join(Users)
-                .where(Users.UserId == user_id)
             )
-            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return mission_chunk.fetchall()
-
-    @staticmethod
-    async def get_user_missions_by_status(
-        mission_status: str, user_id: int, offset: int = 0, pagination: bool = False
-    ) -> list[Submissions]:
-        async with get_session() as session:
-            if pagination:
-                sql: str = (
-                    select(Submissions)
-                    .join(Users)
-                    .where(
-                        Submissions.Status == mission_status, Users.UserId == user_id
-                    )
-                    .limit(8)
-                    .offset(offset * 8)
-                )
-            else:
-                sql = (
-                    select(Submissions)
-                    .join(Users)
-                    .where(
-                        Submissions.Status == mission_status, Users.UserId == user_id
-                    )
-                )
-            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            return mission_chunk.scalars().all()
-
-    @staticmethod
-    async def update_admin_id(submission_id: int, admin_id: int | None) -> None:
-        async with get_session() as session:
-            sql: str = (
-                update(Submissions)
-                .where(Submissions.Id == submission_id)
-                .values(AdminId=admin_id)
+            if user_id:
+                sql: Select = sql.where(Users.UserId == user_id)
+            mission_chunk: ChunkedIteratorResult = await session.execute(
+                sql.limit(8).offset(offset * 8) if pagination else sql
             )
-            try:
-                await session.execute(sql)
-                await session.commit()
-                return None
-            except IntegrityError as IE:
-                logger.error(f"Indentation error in function '{__name__}': {IE}")
-                await session.rollback()
+            return mission_chunk.scalars().all()
 
     @staticmethod
     async def delete_mission_by_id(mission_id: int) -> None:
         async with get_session() as session:
-            sql: str = delete(Submissions).where(Submissions.Id == mission_id)
+            submission: Submissions = await session.get(Submissions, mission_id)
             try:
-                await session.execute(sql)
+                await session.delete(submission)
                 await session.commit()
                 return None
             except IntegrityError as IE:
@@ -194,41 +104,38 @@ class SubmissionsAPI:
     @staticmethod
     async def get_statistic_data() -> dict:
         async with get_session() as session:
-            now = func.NOW()
+            now = func.now()
             queries = {
-                "newUserToDay": select(func.count()).where(
-                    func.DATE(Users.DateTime) == func.DATE(now)
-                ),
+                "newUserToDay": select(func.count()).where(Users.created_at == now),
                 "newUserToWeek": select(func.count()).where(
-                    Users.DateTime >= now - timedelta(weeks=1)
+                    Users.created_at >= now - timedelta(weeks=1)
                 ),
                 "newUserToMonth": select(func.count()).where(
-                    Users.DateTime >= now - timedelta(days=30)
+                    Users.created_at >= now - timedelta(days=30)
                 ),
                 "UserTotal": select(func.count(Users.Id)),
-                "countExchangeUser": select(func.count(distinct(Users.UserId))).join(
-                    Submissions
-                ),
+                "countExchangeUser": select(func.count(distinct(Users.UserId)))
+                .join(Submissions, Submissions.user),
                 "exchangeToDay": select(func.count()).where(
-                    Submissions.DateTime >= now - timedelta(days=1),
+                    Submissions.created_at >= now - timedelta(days=1),
                     Submissions.Status == "COMPLETED",
                 ),
                 "exchangeToWeek": select(func.count()).where(
-                    Submissions.DateTime >= now - timedelta(weeks=1),
+                    Submissions.created_at >= now - timedelta(weeks=1),
                     Submissions.Status == "COMPLETED",
                 ),
                 "exchangeToMonth": select(func.count()).where(
-                    Submissions.DateTime >= now - timedelta(days=30),
+                    Submissions.created_at >= now - timedelta(days=30),
                     Submissions.Status == "COMPLETED",
                 ),
                 "exchangeTotal": select(func.count(Submissions.Id)),
                 "topWorker": select(Users.UserId)
-                .join(Submissions, Users.UserId == Submissions.AdminId)
+                .join(Submissions, Submissions.admin)
                 .group_by(Users.UserId)
                 .order_by(func.count(Submissions.Id).desc())
                 .limit(1),
                 "topExchangerUserID": select(Users.UserId)
-                .join(Submissions)
+                .join(Submissions, Submissions.user)
                 .where(Submissions.Status == "COMPLETED")
                 .group_by(Users.UserId)
                 .order_by(func.count().desc())
@@ -247,16 +154,3 @@ class SubmissionsAPI:
                 result: ChunkedIteratorResult = await session.execute(query)
                 results[key] = result.scalar()
             return results
-
-    @staticmethod
-    async def data_completed_submissions() -> list[Row]:
-        async with get_session() as session:
-            sql: str = (
-                select(Submissions, WalletAddress, Users)
-                .join(WalletAddress)
-                .join(Users)
-                .where(Submissions.Status == "COMPLETED")
-            )
-            mission_chunk: ChunkedIteratorResult = await session.execute(sql)
-            response: list[Row] = mission_chunk.all()
-            return response

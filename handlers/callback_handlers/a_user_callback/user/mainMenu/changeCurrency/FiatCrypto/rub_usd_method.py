@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.tables import WalletAddress
+from databaseAPI.models import Wallets
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, backLexicon, minSum
 
@@ -40,7 +40,7 @@ async def rub_usd_method_FC(
         await state.update_data(currency_from=callback_data.page.upper())
     state_data: dict[str:str] = await state.get_data()
     minimal_amount = await JsonService.get_specific_data(name_data="minSum")
-    work_wallet: WalletAddress = await WalletService.random_wallet(
+    work_wallet: Wallets = await WalletService.random_wallet(
         name_net=state_data["typeFiat"]
     )
     if state_data["currency_from"] != "RUB":

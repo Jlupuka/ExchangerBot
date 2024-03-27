@@ -6,7 +6,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from databaseAPI.commands.walletAddress_commands import WalletAPI
-from databaseAPI.tables import WalletAddress
+from databaseAPI.models import Wallets
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import (
     botMessages,
@@ -33,8 +33,9 @@ async def print_wallets(
 ) -> NoReturn:
     await state.clear()
     await state.update_data(name_net=callback_data.page)
-    wallets_list: list[tuple[int, str]] = await WalletAPI.get_wallets_data(
-        name_net=callback_data.page.upper()
+    wallets = await WalletAPI.select_wallets(NameNet=callback_data.page.upper())
+    wallets_list: list[tuple[int, str]] = await WalletService.preprocess_wallets_data(
+        wallets=wallets
     )
     text, wallets_dict = await WalletService.preprocess_wallets(wallets=wallets_list)
     await state.update_data(**wallets_dict)
@@ -83,15 +84,15 @@ async def address_edit(
     await state.set_state(None)
     state_data = await state.get_data()
     wallet_id = int(state_data["token"].split("-")[1])
-    wallet_data: WalletAddress = await WalletAPI.get_wallet_data(wallet_id=wallet_id)
+    wallet_data: Wallets = (await WalletAPI.select_wallets(Id=wallet_id))[0]
     status_work = wallet_data.Status
     percent = wallet_data.Percent
     address = wallet_data.Address
     address_edit_copy = addressEdit.copy()
     if callback_data.page == "statusWork":
-        status_work = await WalletAPI.update_work_type_wallet(
-            wallet_id=wallet_id, work_type=not status_work
-        )
+        status_work = (
+            await WalletAPI.update_wallet(wallet_id=wallet_id, Status=not status_work)
+        ).Status
     address_edit_copy["statusWork"] = statusWork[not status_work]
     await callback.message.edit_text(
         text=botMessages["addressEdit"].format(
@@ -134,7 +135,7 @@ async def update_percent_wallet(callback: CallbackQuery, state: FSMContext) -> N
     state_data = await state.get_data()
     wallet_id = int(state_data["token"].split("-")[1])
     percent = state_data["percent"]
-    await WalletAPI.update_percent(wallet_id=wallet_id, percent=percent)
+    await WalletAPI.update_wallet(wallet_id=wallet_id, Percent=percent)
     await callback.message.edit_text(
         text=botMessages["completedEditPercent"].format(percent=percent),
         reply_markup=await Factories.create_fac_menu(

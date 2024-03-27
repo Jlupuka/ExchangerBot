@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.userCommands.user_commands import UserAPI
-from databaseAPI.tables import Users
+from databaseAPI.models import Users
 from factories.factory import UserCallbackFactory
 from lexicon.lexicon import errorLexicon, kycVerify
 from keyboard.keyboard_factory import Factories

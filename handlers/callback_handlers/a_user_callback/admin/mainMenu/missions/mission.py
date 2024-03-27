@@ -1,13 +1,15 @@
-from typing import NoReturn, Union
+from typing import NoReturn, Union, Any, Sequence
 
 from aiogram import Router, Bot, exceptions
 from aiogram import F
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, FSInputFile
+from sqlalchemy import RowMapping, Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.tables import Submissions
+from databaseAPI.models import Submissions
+from databaseAPI.models.models import Statuses
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
     botMessages,
@@ -36,10 +38,10 @@ router: Router = Router()
     MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin(checkAdminWork=True)
 )
 async def mission_data(
-    callback: CallbackQuery,
-    callback_data: MissionCallbackFactory,
-    state: FSMContext,
-    bot: Bot,
+        callback: CallbackQuery,
+        callback_data: MissionCallbackFactory,
+        state: FSMContext,
+        bot: Bot,
 ) -> NoReturn:
     await state.clear()
     await callback.message.delete()
@@ -48,11 +50,11 @@ async def mission_data(
         mission_id=callback_data.mission_id
     )
     if mission_obj:
-        if mission_obj.Status != "COMPLETED":
+        if mission_obj.Status.value != "COMPLETED":
             sendMission_copy = {**sendMission, **revokeButton}
         if (
-            mission_obj.TypeTrans.split("/")[1] == "CRYPTO"
-            and mission_obj.Status != "COMPLETED"
+                mission_obj.TypeTrans.value.split("/")[1] == "CRYPTO"
+                and mission_obj.Status.value != "COMPLETED"
         ):
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
                 amount=mission_obj.AmountFrom,
@@ -76,8 +78,8 @@ async def mission_data(
                 amountFrom=mission_obj.AmountFrom,
                 walletCurrency=wallet_obj.NameNet,
                 amountTo=mission_obj.AmountTo,
-                statusMission=changeStatus[mission_obj.Status.lower()].upper(),
-                dataTime=mission_obj.DateTime,
+                statusMission=changeStatus[mission_obj.Status.value.lower()].upper(),
+                dataTime=mission_obj.created_at,
             ),
             reply_markup=await Factories.create_fac_mission(
                 MissionCallbackFactory,
@@ -98,10 +100,10 @@ async def mission_data(
     IsAdmin(checkAdminWork=True),
 )
 async def get_missions_type(
-    callback: CallbackQuery,
-    callback_data: Union[AdminCallbackFactory, MissionCallbackFactory],
-    state: FSMContext,
-    bot: Bot,
+        callback: CallbackQuery,
+        callback_data: Union[AdminCallbackFactory, MissionCallbackFactory],
+        state: FSMContext,
+        bot: Bot,
 ) -> NoReturn:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
@@ -126,26 +128,32 @@ async def get_missions_type(
     IsAdmin(checkAdminWork=True),
 )
 async def missions_return(
-    callback: CallbackQuery,
-    callback_data: AdminCallbackFactory,
-    state: FSMContext,
-    bot: Bot,
+        callback: CallbackQuery,
+        callback_data: AdminCallbackFactory,
+        state: FSMContext,
+        bot: Bot,
 ) -> NoReturn:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     try:
-        mission_status = callback_data.page.upper()
-        missions_data: list[Submissions] = await SubmissionsAPI.get_missions_by_status(
-            mission_status=mission_status,
-            pagination=True,
-            offset=callback_data.mission_page,
+        mission_status: Statuses = Statuses.__dict__['_member_map_'][callback_data.page]
+        missions_data: Sequence[Row | RowMapping | Any] = (
+            await SubmissionsAPI.select_missions(True,
+                                                 None,
+                                                 callback_data.mission_page,
+                                                 *(Submissions,),
+                                                 Status=mission_status)
         )
         if missions_data:
-            mission_count = len(missions_data)
-            mission_count_total = await SubmissionsAPI.get_count_missions_by_status(
-                mission_status=mission_status
-            )
+            mission_count: int = len(missions_data)
+            mission_count_total: int = len(await SubmissionsAPI.select_missions(
+                False,
+                None,
+                0,
+                *(Submissions,),
+                Status=mission_status,
+            ))
             text, preprocess_mission = await SubmissionService.preprocess_mission_data(
                 mission_data=missions_data
             )

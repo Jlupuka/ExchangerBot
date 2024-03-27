@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from databaseAPI.commands.userCommands.user_commands import UserAPI
-from databaseAPI.tables import Users
+from databaseAPI.models import Users
 
 
 class DataBaseCheckUserMiddleware(BaseMiddleware):

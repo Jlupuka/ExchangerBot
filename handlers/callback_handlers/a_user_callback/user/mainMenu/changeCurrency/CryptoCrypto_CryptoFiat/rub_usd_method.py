@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.tables import WalletAddress
+from databaseAPI.models import Wallets
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, backLexicon, minSum
 
@@ -48,7 +48,7 @@ async def rub_usd_method_CC_CF(
     if callback_data.page != "repeatGetSum":
         await state.update_data(currency_from=callback_data.page.upper())
     state_data: dict[str:str] = await state.get_data()
-    work_wallet: WalletAddress = await WalletService.random_wallet(
+    work_wallet: Wallets = await WalletService.random_wallet(
         name_net=state_data["typeCrypto"]
     )
     if state_data["currency_to"] == "СПБ":

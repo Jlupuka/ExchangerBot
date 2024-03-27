@@ -1,4 +1,4 @@
-from typing import NoReturn
+from typing import NoReturn, Any
 
 from aiogram import Router
 from aiogram import F
@@ -105,8 +105,9 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     StateFilter(FSMEditPatterns.choice_pattern),
 )
 async def verification_delete(
-    callback: CallbackQuery, callback_data: AdminCallbackFactory
+    callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
 ) -> NoReturn:
+    await state.update_data(patterns=callback_data.page)
     await callback.message.edit_text(
         text=botMessages["verificationDeletePattern"].format(
             pattern=callback_data.page
@@ -123,10 +124,11 @@ async def verification_delete(
     StateFilter(FSMEditPatterns.choice_pattern),
 )
 async def delete_pattern(
-    callback: CallbackQuery, callback_data: AdminCallbackFactory
+    callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
 ) -> NoReturn:
+    state_data: dict[str, Any] = await state.get_data()
     work_patterns = await JsonService.get_specific_data(name_data="patterns")
-    token_delete = work_patterns.pop(callback_data.page)
+    token_delete = work_patterns.pop(state_data["patterns"])
     await JsonService.save_token_patterns(patterns=work_patterns)
     patterns_button = await JsonService.preprocess_patterns_for_button()
     patterns_text = await JsonService.preprocess_patterns_for_text()
@@ -136,7 +138,7 @@ async def delete_pattern(
     patternsMenu_copy = patternsMenu.copy()
     await callback.message.edit_text(
         text=botMessages["deletePatterns"].format(
-            deletePattern=f"{callback_data.page} - {token_delete}",
+            deletePattern=f"{state_data['patterns']} - {token_delete}",
             patterns=patterns_text,
         ),
         reply_markup=await Factories.create_fac_menu(

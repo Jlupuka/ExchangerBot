@@ -1,10 +1,12 @@
-from typing import NoReturn
+from typing import NoReturn, Sequence, Any
 
 from aiogram import Router, exceptions, F
 from aiogram.types import CallbackQuery
+from sqlalchemy import RowMapping, Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.tables import Submissions
+from databaseAPI.models import Submissions
+from databaseAPI.models.models import Statuses
 from lexicon.lexicon import (
     botMessages,
     listMissions,
@@ -45,19 +47,16 @@ async def accepted_missions_handler(
     callback: CallbackQuery, callback_data: UserCallbackFactory
 ) -> NoReturn:
     try:
-        mission_status = callback_data.page.upper()
-        missions_data: list[Submissions] = (
-            await SubmissionsAPI.get_user_missions_by_status(
-                mission_status=mission_status,
-                user_id=callback.from_user.id,
-                pagination=True,
-                offset=callback_data.mission_page,
-            )
+        mission_status: Statuses = Statuses[callback_data.page]
+        missions_data: Sequence[Row | RowMapping | Any] = (
+            await SubmissionsAPI.select_missions(True,
+                                                 callback.from_user.id,
+                                                 callback_data.mission_page,
+                                                 *(Submissions,),
+                                                 Status=mission_status)
         )
         if missions_data:
-            mission_count = await SubmissionsAPI.get_count_user_missions_by_status(
-                mission_status=mission_status, user_id=callback.from_user.id
-            )
+            mission_count: int = len(missions_data)
             text, preprocess_mission = await SubmissionService.preprocess_mission_data(
                 mission_data=missions_data
             )
@@ -113,8 +112,8 @@ async def information_mission(
             NameNet=wallet_obj.NameNet,
             amountTo=mission_obj.AmountTo,
             currencyTo=mission_obj.CurrencyTo,
-            statusMission=changeStatus[mission_obj.Status.lower()].upper(),
-            dataTime=mission_obj.DateTime,
+            statusMission=changeStatus[mission_obj.Status.value.lower()].upper(),
+            dataTime=mission_obj.created_at,
         ),
         reply_markup=await Factories.create_fac_mission(
             MissionCallbackFactory,

@@ -6,6 +6,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
+from databaseAPI.models import Users
+from databaseAPI.models.models import Statuses
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
     botMessages,
@@ -33,30 +35,30 @@ async def get_missions(
     callback: CallbackQuery,
     callback_data: MissionCallbackFactory,
     state: FSMContext,
+    user: Users,
     bot: Bot,
 ) -> NoReturn:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     if callback_data.page != callback_data.back_page:
-        mission_obj, _, user = await SubmissionsAPI.get_mission_data(
+        mission_obj, _, user_mission = await SubmissionsAPI.get_mission_data(
             mission_id=callback_data.mission_id
         )
-        if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
+        if mission_obj.AdminId is None or mission_obj.AdminId == user.Id:
             oldStatus = mission_obj.Status
             if callback_data.page != "changeStatus":
-                await SubmissionsAPI.update_mission_status(
+                mission_obj = await SubmissionsAPI.update_mission(
                     submission_id=callback_data.mission_id,
-                    status=callback_data.page.upper(),
+                    Status=Statuses[callback_data.page],
                 )
-                mission_obj.Status = callback_data.page.upper()
             copy_changeStatus = changeStatus.copy()
-            copy_changeStatus[mission_obj.Status.lower()] = (
-                f'{mission_obj.Status} {checkMark["yes"]}'
+            copy_changeStatus[mission_obj.Status.value.lower()] = (
+                f'{mission_obj.Status.value} {checkMark["yes"]}'
             )
             await callback.message.edit_text(
                 text=botMessages["changeStatus"].format(
-                    missionID=mission_obj.Id, statusMission=mission_obj.Status
+                    missionID=mission_obj.Id, statusMission=mission_obj.Status.value
                 ),
                 reply_markup=await Factories.create_fac_mission(
                     MissionCallbackFactory,
@@ -74,10 +76,12 @@ async def get_missions(
                 "completed",
             }:  # Notifying the user
                 await bot.send_message(
-                    chat_id=user.UserId,
+                    chat_id=user_mission.UserId,
                     text=botMessages["changeStatusUser"].format(
                         missionID=mission_obj.Id,
-                        statusMission=changeStatus[mission_obj.Status.lower()].upper(),
+                        statusMission=changeStatus[
+                            mission_obj.Status.value.lower()
+                        ].upper(),
                     ),
                     reply_markup=await Factories.create_fac_mission(
                         MissionCallbackFactory,
@@ -88,23 +92,23 @@ async def get_missions(
                         **informationMissionUser,
                     ),
                 )
-                await SubmissionsAPI.update_admin_id(
+                await SubmissionsAPI.update_mission(
                     submission_id=mission_obj.Id,
-                    admin_id=(
-                        None if callback_data.page == "wait" else callback.from_user.id
+                    AdminId=(
+                        None if callback_data.page == Statuses.wait.value else user.Id
                     ),
                 )
                 logger.info(
                     "userID=%s, adminID=%s, oldStatus=%s, newStatus=%s",
-                    user.UserId,
+                    user_mission.UserId,
                     callback.from_user.id,
                     oldStatus,
                     mission_obj.Status,
                 )
-        elif mission_obj.AdminId != callback.from_user.id:
+        elif mission_obj.AdminId != user.Id:
             copy_changeStatus = changeStatus.copy()
-            copy_changeStatus[mission_obj.Status.lower()] = (
-                f'{mission_obj.Status} {checkMark["yes"]}'
+            copy_changeStatus[mission_obj.Status.value.lower()] = (
+                f'{mission_obj.Status.value} {checkMark["yes"]}'
             )
             await callback.message.edit_text(
                 text=errorLexicon["anotherAdminTakeMiss"],

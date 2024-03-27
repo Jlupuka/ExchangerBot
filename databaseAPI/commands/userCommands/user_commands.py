@@ -1,11 +1,13 @@
+from typing import Any, Sequence
+
+from sqlalchemy import select, Select, Update, update
+
 from services import logger
 
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy.engine.result import ChunkedIteratorResult
 
 from databaseAPI.database import get_session
-from databaseAPI.tables.usersTable import Users
+from databaseAPI.models.models import Users
 from config.config import load_config, Config
 
 config: Config = load_config()
@@ -13,7 +15,7 @@ config: Config = load_config()
 
 class UserAPI:
     @staticmethod
-    async def __add_user(user_id: int) -> Users | None:
+    async def __add_user(user_id: int) -> Users:
         """
         Add a user to the database
         :param user_id:
@@ -34,18 +36,35 @@ class UserAPI:
                 await session.rollback()
 
     @staticmethod
-    async def select_user(user_id: int) -> Users | None:
+    async def select_user(**kwargs: dict[str:Any]) -> Sequence[Users]:
         """
         Retrieve user data by user_id
-        :param user_id:
+        :param kwargs:
         :return: Users | None
         """
         async with get_session() as session:
-            sql = select(Users).where(Users.UserId == user_id)
-            user_chunk: ChunkedIteratorResult = await session.execute(sql)
-            user_scalar: list = user_chunk.scalars().all()
+            sql: Select = select(Users).where(
+                *[getattr(Users, __key) == __value for __key, __value in kwargs.items()]
+            )
             try:
-                return user_scalar[0] if user_scalar else None
+                return (await session.execute(sql)).scalars().all()
+            except NoResultFound as NRF:
+                logger.error(f"Indentation error in function '{__name__}': {NRF}")
+                await session.rollback()
+
+    @staticmethod
+    async def update_user(user_id: int, **kwargs: dict[str:Any]) -> Users:
+        async with get_session() as session:
+            sql: Update = (
+                update(Users)
+                .where(Users.UserId == user_id)
+                .values(**kwargs)
+                .returning(Users)
+            )
+            try:
+                user: Users = (await session.scalars(sql)).one()
+                await session.commit()
+                return user
             except NoResultFound as NRF:
                 logger.error(f"Indentation error in function '{__name__}': {NRF}")
                 await session.rollback()
@@ -57,18 +76,7 @@ class UserAPI:
         :param user_id:
         :return: None
         """
-        user: Users | None = await UserAPI.select_user(user_id=user_id)
+        user: Sequence[Users] = await UserAPI.select_user(UserId=user_id)
         if not user:
-            user: Users | None = await UserAPI.__add_user(user_id=user_id)
-        return user
-
-    @staticmethod
-    async def select_all_users() -> list[Users] | None:
-        """
-        Select all users from the 'Users'-table.
-        :return:  None
-        """
-        async with get_session() as session:
-            sql = select(Users)
-            result: ChunkedIteratorResult = await session.execute(sql)
-            return result.scalars().all()
+            user: Users = await UserAPI.__add_user(user_id=user_id)
+        return user[0]

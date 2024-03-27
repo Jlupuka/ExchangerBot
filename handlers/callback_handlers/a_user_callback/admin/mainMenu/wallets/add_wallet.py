@@ -6,6 +6,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from databaseAPI.commands.walletAddress_commands import WalletAPI
+from databaseAPI.models.models import TypesWallet
 
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
@@ -99,14 +100,14 @@ async def add_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     state_data: dict[str:str] = await state.get_data()
     name_net: str = state_data["currency_to"].upper()
     address: str = state_data["address"]
-    wallet_type: str = state_data["walletType"].upper()
+    wallet_type: TypesWallet = TypesWallet.__dict__['_member_map_'][state_data["walletType"]]
     response = await WalletAPI.add_wallet(
         name_net=name_net, address=address, type_wallet=wallet_type
     )
-    if response is NoReturn:
+    if response is None:
         await callback.message.edit_text(
             text=successfullyMessage["addWallet"].format(
-                nameNet=name_net, address=address, walletType=wallet_type
+                nameNet=name_net, address=address, walletType=wallet_type.value
             ),
             reply_markup=await Factories.create_fac_menu(
                 AdminCallbackFactory,
@@ -117,7 +118,7 @@ async def add_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     else:
         await callback.message.edit_text(
             text=errorLexicon["WalletExist"].format(
-                nameNet=name_net, address=address, walletType=wallet_type
+                nameNet=name_net, address=address, walletType=wallet_type.value
             ),
             reply_markup=await Factories.create_fac_menu(
                 AdminCallbackFactory,

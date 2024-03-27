@@ -1,18 +1,21 @@
+from typing import Any, Sequence
+
+from databaseAPI.models.models import TypesWallet
 from services import logger
 
-from sqlalchemy import func, select, delete, update
+from sqlalchemy import func, select, Select, Delete, delete, update, Update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.engine.result import ChunkedIteratorResult
 
 from databaseAPI.database import get_session
-from databaseAPI.tables.walletAddressTable import WalletAddress
+from databaseAPI.models import Wallets
 
 
 class WalletAPI:
     @staticmethod
     async def count_wallets() -> int:
         async with get_session() as session:
-            sql: str = func.count(WalletAddress.Id)
+            sql: str = func.count(Wallets.Id)
             count_chunk: ChunkedIteratorResult = await session.execute(sql)
             count: int = count_chunk.scalar()
             return count
@@ -20,15 +23,17 @@ class WalletAPI:
     @staticmethod
     async def get_all_name_net_wallets() -> set[str]:
         async with get_session() as session:
-            sql: str = select(WalletAddress.NameNet)
+            sql: Select = select(Wallets.NameNet)
             nets_chunk: ChunkedIteratorResult = await session.execute(sql)
             return set(nets_chunk.scalars().all())
 
     @staticmethod
-    async def add_wallet(name_net: str, address: str, type_wallet: str) -> None | bool:
-        if not await WalletAPI.get_wallets_data(address=address):
+    async def add_wallet(
+        name_net: str, address: str, type_wallet: TypesWallet
+    ) -> None | bool:
+        if not await WalletAPI.select_wallets(Address=address):
             async with get_session() as session:
-                wallet_object: WalletAddress = WalletAddress(
+                wallet_object: Wallets = Wallets(
                     NameNet=name_net, Address=address, typeWallet=type_wallet
                 )
                 session.add(wallet_object)
@@ -41,74 +46,52 @@ class WalletAPI:
         return False
 
     @staticmethod
-    async def get_wallets_data(
-        name_net: str = None, address: str = None
-    ) -> list[tuple[int, str]]:
+    async def select_wallets(
+        *args: str,
+        **kwargs: dict[str:Any],
+    ) -> Sequence[Wallets]:
         async with get_session() as session:
-            sql: str = select(WalletAddress).where(
-                WalletAddress.NameNet == name_net
-                if name_net
-                else WalletAddress.Address == address
+            args = [Wallets] if not args else [getattr(Wallets, table) for table in args if hasattr(Wallets, table)]
+            sql: Select = select(
+                *args
+            ).where(
+                *[
+                    getattr(Wallets, __key) == __value
+                    for __key, __value in kwargs.items()
+                ]
             )
-            wallets_data: ChunkedIteratorResult = await session.execute(sql)
-            return [
-                (wallet.Id, wallet.Address) for wallet in wallets_data.scalars().all()
-            ]
-
-    @staticmethod
-    async def delete_wallet(wallet_id: int) -> None:
-        async with get_session() as session:
-            sql: str = delete(WalletAddress).where(WalletAddress.Id == wallet_id)
             try:
-                await session.execute(sql)
-                await session.commit()
-                return None
-            except IntegrityError as IE:
-                logger.error(f"Indentation error in function '{__name__}': {IE}")
-                await session.rollback()
-
-    @staticmethod
-    async def get_wallet_data(
-        wallet_id: int, get_data: str = None
-    ) -> float | WalletAddress:
-        async with get_session() as session:
-            sql: str = select(WalletAddress).where(WalletAddress.Id == wallet_id)
-            wallet_chunk: ChunkedIteratorResult = await session.execute(sql)
-            wallet: WalletAddress = wallet_chunk.scalars().one()
-            try:
-                return getattr(wallet, get_data) if get_data else wallet
+                wallets: ChunkedIteratorResult = await session.execute(sql)
+                return wallets.scalars().all()
             except NoResultFound as NRF:
                 logger.error(f"Indentation error in function '{__name__}': {NRF}")
                 await session.rollback()
 
     @staticmethod
-    async def update_work_type_wallet(wallet_id: int, work_type: bool) -> bool:
+    async def delete_wallet(wallet_id: int) -> None:
         async with get_session() as session:
-            sql: str = (
-                update(WalletAddress)
-                .where(WalletAddress.Id == wallet_id)
-                .values(Status=work_type)
-            )
+            sql: Delete = delete(Wallets).where(Wallets.Id == wallet_id)
             try:
                 await session.execute(sql)
                 await session.commit()
-                return work_type
+                return None
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
 
     @staticmethod
-    async def update_percent(wallet_id: int, percent: float) -> None:
+    async def update_wallet(wallet_id: int, **kwargs) -> Wallets:
         async with get_session() as session:
-            sql: str = (
-                update(WalletAddress)
-                .where(WalletAddress.Id == wallet_id)
-                .values(Percent=percent)
+            sql: Update = (
+                update(Wallets)
+                .where(Wallets.Id == wallet_id)
+                .values(**kwargs)
+                .returning(Wallets)
             )
             try:
-                await session.execute(sql)
+                wallet: Wallets = await session.scalars(sql)
                 await session.commit()
-                return None
+                return wallet
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
@@ -116,11 +99,11 @@ class WalletAPI:
     @staticmethod
     async def get_all_name_net_by_type(type_wallet: str) -> set[str] | bool:
         async with get_session() as session:
-            sql: str = select(WalletAddress.NameNet).where(
-                WalletAddress.typeWallet == type_wallet
+            sql: Select = select(Wallets.NameNet).where(
+                Wallets.typeWallet == type_wallet
             )
             wallet_chunk: ChunkedIteratorResult = await session.execute(sql)
-            wallet_scalar = wallet_chunk.scalars().all()
+            wallet_scalar: Sequence[Wallets] = wallet_chunk.scalars().all()
             try:
                 return set(wallet_scalar) if wallet_scalar else False
             except NoResultFound as NRF:
@@ -130,13 +113,13 @@ class WalletAPI:
     @staticmethod
     async def get_wallets_for_mission(
         name_net: str, work_type: bool = True
-    ) -> list[WalletAddress]:
+    ) -> Sequence[Wallets]:
         async with get_session() as session:
-            sql: str = select(WalletAddress).where(
-                WalletAddress.NameNet == name_net, WalletAddress.Status == work_type
+            sql: Select = select(Wallets).where(
+                Wallets.NameNet == name_net, Wallets.Status == work_type
             )
             wallets_chunk: ChunkedIteratorResult = await session.execute(sql)
-            wallets_scalar: list[WalletAddress] = wallets_chunk.scalars().all()
+            wallets_scalar: Sequence[Wallets] = wallets_chunk.scalars().all()
             try:
                 return wallets_scalar if wallets_scalar else False
             except NoResultFound as NRF:

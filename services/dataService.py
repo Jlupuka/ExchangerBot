@@ -10,7 +10,7 @@ class JsonService:
     @staticmethod
     async def save_json(data: dict[str:Any], file: str = "src/data/data.json") -> None:
         async with aiofiles.open(file, mode="w", encoding="utf-8") as f:
-            await f.write(json.dumps(data, indent=4))
+            await f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
     @staticmethod
     async def read_json(filename: str = "src/data/data.json") -> dict:

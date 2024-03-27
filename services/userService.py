@@ -1,18 +1,21 @@
 import random
 import datetime
+from typing import Sequence, Any
 
+from sqlalchemy import RowMapping
 from sqlalchemy.engine import Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
-from databaseAPI.tables.usersTable import Users
+from databaseAPI.models import Wallets, Submissions
+from databaseAPI.models.models import Users, Statuses
 from services.cryptoService import CryptoCheck
 
 
 class UserService:
     @staticmethod
     async def random_admin() -> Users | None:
-        all_work_admins: list[Users] = await AdminAPI.select_all_admins()
+        all_work_admins: list[Users] = await AdminAPI.select_work_admins()
         return random.choice(all_work_admins) if all_work_admins else None
 
     @staticmethod
@@ -25,28 +28,26 @@ class UserService:
     async def statistic_user(user_id: int) -> dict[str, int]:
         favorite_category: dict[str:int] = dict()
         count_each_mission: dict[str:int] = {"WAIT": 0, "ACCEPTED": 0, "COMPLETED": 0}
-        user_missions: list[Row] = await SubmissionsAPI.get_user_missions_wallets(
-            user_id=user_id
-        )
+        user_missions: Sequence[Row | RowMapping | Any] = await SubmissionsAPI.select_missions(False, user_id, 0,
+                                                                                               Submissions, Wallets)
         count_transaction: int = len(user_missions)
         total_amount: float = 0.0
-        for data in user_missions:
-            mission, wallet = data
-            favorite_category[mission.TypeTrans] = (
-                favorite_category.get(mission.TypeTrans, 0) + 1
+        for mission in user_missions:
+            favorite_category[mission.TypeTrans.value] = (
+                    favorite_category.get(mission.TypeTrans, 0) + 1
             )
-            count_each_mission[mission.Status] = (
-                count_each_mission.get(mission.Status, 0) + 1
+            count_each_mission[mission.Status.value] = (
+                    count_each_mission.get(mission.Status, 0) + 1
             )
-            if mission.Status == "COMPLETED":
+            if mission.Status == Statuses.completed:
                 amount_from = (
                     await CryptoCheck.transaction_amount(
                         amount=mission.AmountFrom,
-                        currency_from=wallet.NameNet,
+                        currency_from=mission.wallet.NameNet,
                         currency_to="RUB",
                         margins=1,
                     )
-                    if wallet.NameNet != "СПБ"
+                    if mission.wallet.NameNet != "СПБ"
                     else mission.AmountFrom
                 )
                 total_amount += amount_from
@@ -64,11 +65,15 @@ class UserService:
 
     @staticmethod
     async def verif_number() -> int:
-        return random.randint(10**5, 10**6 - 1)
+        return random.randint(10 ** 5, 10 ** 6 - 1)
 
     @staticmethod
     async def statistic_admin() -> dict:
-        data: list[Row] = await SubmissionsAPI.data_completed_submissions()
+        completed_submissions: Sequence[Row] = await SubmissionsAPI.select_missions(False,
+                                                                                    None,
+                                                                                    0,
+                                                                                    *(Submissions,),
+                                                                                    Status=Statuses.completed)
         result = {
             "gainToDay": 0,
             "gainToWeek": 0,
@@ -80,7 +85,7 @@ class UserService:
         }
         cache_currency: dict[int, float] = {"СПБ": 1, "RUB": 1}
         now = datetime.datetime.utcnow()
-        for mission, wallet, user in data:
+        for mission, wallet, user in completed_submissions:
             amount_user = mission.AmountFrom
             if cache_currency.get(wallet.NameNet) is None:
                 cache_currency[wallet.NameNet] = await CryptoCheck.currency_rate(

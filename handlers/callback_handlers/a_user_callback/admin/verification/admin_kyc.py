@@ -25,7 +25,7 @@ router: Router = Router()
 async def approve_verif_user(
         callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot
 ) -> NoReturn:
-    await AdminAPI.update_kyc(user_id=callback_data.user_id, typeKYC=True)
+    await AdminAPI.update_user(user_id=callback_data.user_id, KYC=True)
     await callback.message.answer(
         text=botMessages["approveVerif"].format(userID=callback_data.user_id),
         reply_markup=await Factories.create_fac_menu(

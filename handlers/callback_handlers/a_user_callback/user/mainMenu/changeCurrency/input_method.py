@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
+from databaseAPI.models.models import TypesWallet
 from filters.filters import IsToken
 from lexicon.lexicon import (
     botMessages,
@@ -52,7 +53,7 @@ router: Router = Router()
     ),
 )
 async def save_type_fiat_transaction(
-    callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
+        callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
 ) -> NoReturn:
     state_data: dict[str:str] = await state.get_data()
     await StateService.set_states(
@@ -88,13 +89,13 @@ async def save_type_fiat_transaction(
     ),
 )
 async def crypto_method(
-    callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
+        callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
 ) -> NoReturn:
     await StateService.set_states(
         state_name="get_sum_crypto", state_data=await state.get_data(), state=state
     )
     wallets_dict: dict[str:str] = await WalletService.get_wallets(
-        func=WalletAPI.get_all_name_net_by_type, type_wallet="CRYPTO"
+        "NameNet", typeWallet=TypesWallet.crypto
     )
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1

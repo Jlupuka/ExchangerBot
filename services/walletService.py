@@ -1,29 +1,20 @@
 import random
 import re
-from typing import Union
+from typing import Union, Sequence, Any
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
-from databaseAPI.tables import WalletAddress
+from databaseAPI.models import Wallets
 from lexicon.lexicon import cryptoSymbol
 
 
 class WalletService:
     @staticmethod
-    async def get_wallets(
-        func: Union[
-            WalletAPI.get_all_name_net_wallets, WalletAPI.get_all_name_net_by_type
-        ],
-        type_wallet: str = None,
-    ) -> dict[str:str]:
+    async def get_wallets(*args: str, **kwargs: dict[str:Any]) -> dict[str:str]:
         """
         Returns all short names of currencies that exist in the database
-        :param type_wallet: (str) passed if the WalletAPI.get_all_name_net_by_type
-        :param func: (Type[WalletAPI.get_all_name_net_wallets] | Type[WalletAPI.get_all_name_net_by_type])
         :return: (dict[str]) key is the name in lower case, value - in upper case
         """
-        wallets_data: set[str] = (
-            await func() if type_wallet is None else await func(type_wallet=type_wallet)
-        )
+        wallets_data: set[Any] = set(await WalletAPI.select_wallets(*args, **kwargs))
         return {
             wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}'
             for wallet in sorted(wallets_data)
@@ -84,8 +75,14 @@ class WalletService:
         return False
 
     @staticmethod
-    async def random_wallet(name_net: str) -> WalletAddress:
-        wallets: list[WalletAddress] = await WalletAPI.get_wallets_for_mission(
+    async def random_wallet(name_net: str) -> Wallets:
+        wallets: Sequence[Wallets] = await WalletAPI.get_wallets_for_mission(
             name_net=name_net
         )
         return random.choice(wallets)
+
+    @staticmethod
+    async def preprocess_wallets_data(
+        wallets: Sequence[Wallets],
+    ) -> list[tuple[int, str]]:
+        return [(wallet.Id, wallet.Address) for wallet in wallets]

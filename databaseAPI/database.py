@@ -1,6 +1,7 @@
-from typing import AsyncGenerator, NoReturn
+from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from contextlib import asynccontextmanager
 
@@ -10,9 +11,13 @@ from config.config import Config, load_config
 
 from services.settingsLogger import logger
 
+
+class Base(DeclarativeBase):
+    pass
+
+
 config: Config = load_config()
 
-Base = declarative_base()
 url = URL.create(
     drivername="postgresql+asyncpg",
     username=config.DataBase.USER,
@@ -22,10 +27,7 @@ url = URL.create(
     database=config.DataBase.NAME,
 )
 
-engine: AsyncEngine = create_async_engine(
-    url,
-    future=True,
-)
+engine: AsyncEngine = create_async_engine(url=url)
 
 
 async def create_base() -> None:
@@ -40,13 +42,13 @@ async def create_base() -> None:
 
 
 @asynccontextmanager
-async def get_session() -> AsyncGenerator:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Provides a convenient way to create and manage database
     :return: None
     """
     try:
-        async with sessionmaker(
+        async with async_sessionmaker(
             engine, class_=AsyncSession, expire_on_commit=False
         )() as session:
             yield session

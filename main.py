@@ -7,7 +7,7 @@ from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.methods import GetUpdates
 
-from databaseAPI.tables import *
+from databaseAPI.models import Submissions, Wallets, Users
 
 from services.service import LoadService
 

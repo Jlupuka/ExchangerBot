@@ -5,7 +5,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from databaseAPI.commands.walletAddress_commands import WalletAPI
+from databaseAPI.models.models import TypesWallet
 from lexicon.lexicon import (
     botMessages,
     fiatOrCrypto,
@@ -30,20 +30,18 @@ async def choice_rub_crypto(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
 ) -> NoReturn:
     await state.clear()
-    typeWallet = callback_data.page.split("-")[1].upper()
+    typeWallet = callback_data.page.split("-")[1]
     await state.update_data(typeTransaction=callback_data.page.upper())
     await StateService.set_states(
         state_name="currency_to", state_data=await state.get_data(), state=state
     )
-    wallets_dict: dict[str:str] = await WalletService.get_wallets(
-        func=WalletAPI.get_all_name_net_by_type, type_wallet=typeWallet
-    )
+    wallets_dict: dict[str:str] = await WalletService.get_wallets("NameNet", typeWallet=TypesWallet[typeWallet])
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1
     )
     await callback.message.edit_text(
         text=botMessages["choiceToken"].format(
-            typeWallet=fiatOrCrypto[typeWallet], typeTransaction=writeGetOrSend["SEND"]
+            typeWallet=fiatOrCrypto[typeWallet.upper()], typeTransaction=writeGetOrSend["SEND"]
         ),
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory,

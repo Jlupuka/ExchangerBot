@@ -28,7 +28,11 @@ class IsAdmin(BaseFilter):
         :return: bool
         """
         is_admin: bool = (await state.get_data())["userIsAdmin"]
-        return is_admin
+        return (
+            is_admin
+            if self.checkAdminWork is False
+            else is_admin and self.checkAdminWork
+        )
 
 
 class IsCryptoAddress(BaseFilter):

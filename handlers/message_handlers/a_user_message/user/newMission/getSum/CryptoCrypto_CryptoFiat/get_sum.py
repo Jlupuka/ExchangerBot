@@ -26,7 +26,7 @@ async def check_the_correct_transaction_CC_CF(
     await state.update_data(amount_from=float(message.text))
     state_data: dict[str:str] = await state.get_data()
     walletPercent = state_data["walletPercent"]
-    if state_data["currency_to"] == "СПБ":
+    if state_data["currency_to"] == "СБП":
         state_data["currency_to"] = "RUB"
     commission = await JsonService.get_specific_data(name_data="commissionSum")
     commission_amount: float = await CryptoCheck.transaction_amount(

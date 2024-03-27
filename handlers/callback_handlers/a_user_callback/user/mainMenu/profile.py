@@ -3,7 +3,7 @@ from typing import NoReturn
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
 
-from databaseAPI.tables import Users
+from databaseAPI.models import Users
 from factories.factory import UserCallbackFactory
 from keyboard.keyboard_factory import Factories
 from lexicon.lexicon import botMessages, kycVerificationLexicon, profileUser
@@ -21,7 +21,7 @@ async def profile_handler(
             userID=user.UserId,
             KYCStatus=kycVerificationLexicon[user.KYC],
             dateRegistration=await UserService.format_date_string(
-                date_string=str(user.DateTime)
+                date_string=str(user.created_at)
             ),
         ),
         reply_markup=await Factories.create_fac_menu(
