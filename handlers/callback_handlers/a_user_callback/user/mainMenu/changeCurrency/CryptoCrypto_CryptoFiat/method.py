@@ -42,7 +42,7 @@ router: Router = Router()
         FSMCryptoCrypto.check_validate_sum,
     ),
 )
-async def rub_usd_method_CC_CF(
+async def method_CC_CF(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
 ) -> NoReturn:
     if callback_data.page != "repeatGetSum":
@@ -83,7 +83,7 @@ async def rub_usd_method_CC_CF(
             min_sum=minimal_amount,
             currency_from=state_data["currency_from"],
             currency_to=state_data["typeCrypto"],
-            currency_rate=currency_rate,
+            currency_rate=format(currency_rate, '.7f') if currency_rate < 1 else currency_rate,
             commission=commission_amount,
         ),
         reply_markup=await Factories.create_fac_menu(

@@ -50,11 +50,11 @@ async def mission_data(
         mission_id=callback_data.mission_id
     )
     if mission_obj:
-        if mission_obj.Status.value != "COMPLETED":
+        if mission_obj.Status != Statuses.completed:
             sendMission_copy = {**sendMission, **revokeButton}
         if (
             mission_obj.TypeTrans.value.split("/")[1] == "CRYPTO"
-            and mission_obj.Status.value != "COMPLETED"
+            and mission_obj.Status != Statuses.completed
         ):
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
                 amount=mission_obj.AmountFrom,
@@ -137,7 +137,7 @@ async def missions_return(
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     try:
-        mission_status: Statuses = Statuses.__dict__["_member_map_"][callback_data.page]
+        mission_status: Statuses = Statuses[callback_data.page]
         missions_data: Sequence[Row | RowMapping | Any] = (
             await SubmissionsAPI.select_missions(
                 True,

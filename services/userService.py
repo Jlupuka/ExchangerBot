@@ -28,7 +28,11 @@ class UserService:
     @staticmethod
     async def statistic_user(user_id: int) -> dict[str, int]:
         favorite_category: dict[str:int] = dict()
-        count_each_mission: dict[str:int] = {"WAIT": 0, "ACCEPTED": 0, "COMPLETED": 0}
+        count_each_mission: dict[str:int] = {
+            Statuses.wait.value: 0,
+            Statuses.accepted.value: 0,
+            Statuses.completed.value: 0,
+        }
         user_missions: Sequence[Row | RowMapping | Any] = (
             await SubmissionsAPI.select_missions(
                 False, user_id, 0, Submissions, Wallets
@@ -38,21 +42,21 @@ class UserService:
         total_amount: float = 0.0
         for mission in user_missions:
             favorite_category[mission.TypeTrans.value] = (
-                favorite_category.get(mission.TypeTrans, 0) + 1
+                favorite_category.get(mission.TypeTrans.value, 0) + 1
             )
             count_each_mission[mission.Status.value] = (
-                count_each_mission.get(mission.Status, 0) + 1
+                count_each_mission.get(mission.Status.value, 0) + 1
             )
             if mission.Status == Statuses.completed:
                 amount_from = (
                     await CryptoCheck.transaction_amount(
-                        amount=mission.AmountFrom,
-                        currency_from=mission.wallet.NameNet,
+                        amount=mission.AmountTo,
+                        currency_from=mission.CurrencyTo,
                         currency_to="RUB",
                         margins=1,
                     )
-                    if mission.wallet.NameNet != "СПБ"
-                    else mission.AmountFrom
+                    if mission.CurrencyTo != "СБП"
+                    else mission.AmountTo
                 )
                 total_amount += amount_from
         return {
@@ -60,8 +64,8 @@ class UserService:
             "countTransaction": count_transaction,
             "totalAmount": total_amount,
             "averageAmount": (
-                round(total_amount / count_each_mission["COMPLETED"], 2)
-                if count_each_mission["COMPLETED"]
+                round(total_amount / count_each_mission[Statuses.completed.value], 2)
+                if count_each_mission[Statuses.completed.value]
                 else 0
             ),
             "typeTransaction": max(favorite_category) if favorite_category else None,
@@ -85,8 +89,11 @@ class UserService:
             "maxExchangeUserID": 0,
             "maxExchangeDateTime": None,
         }
-        cache_currency: dict[int, float] = {"СПБ": 1, "RUB": 1}
+        cache_currency: dict[int, float] = {"СБП": 1, "RUB": 1}
         now = datetime.datetime.utcnow()
+        today = now - datetime.timedelta(days=1)
+        toweek = now - datetime.timedelta(weeks=1)
+        tomonth = now - datetime.timedelta(days=30)
         for mission in completed_submissions:
             amount_user = mission.AmountFrom
             wallet, user = mission.wallet, mission.user
@@ -96,11 +103,11 @@ class UserService:
                 )
             amount_user *= cache_currency[wallet.NameNet]
             amount_admin = amount_user * (wallet.Percent - 1)
-            if mission.created_at >= now - datetime.timedelta(days=1):
+            if mission.created_at >= today:
                 result["gainToDay"] += amount_admin
-            if mission.created_at >= now - datetime.timedelta(weeks=1):
+            if mission.created_at >= toweek:
                 result["gainToWeek"] += amount_admin
-            if mission.created_at >= now - datetime.timedelta(days=30):
+            if mission.created_at >= tomonth:
                 result["gainToMonth"] += amount_admin
             if result["maxExchangeAmount"] < amount_user:
                 result["maxExchangeAmount"] = amount_user

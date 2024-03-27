@@ -1,9 +1,11 @@
 import asyncio
 
+from redis.asyncio.client import Redis
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.middlewares.request_logging import RequestLogging
-from aiogram.fsm.storage.redis import RedisStorage, Redis
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.methods import GetUpdates
 
@@ -31,7 +33,7 @@ async def main() -> None:
     )
 
     bot: Bot = Bot(token=config.TelegramBot.TOKEN, default=bot_properties)
-    dp: Dispatcher = Dispatcher(storage=storge)
+    dp: Dispatcher = Dispatcher(storage=storge, redis=redis)
 
     await create_base()
 
