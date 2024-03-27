@@ -100,7 +100,9 @@ async def add_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     state_data: dict[str:str] = await state.get_data()
     name_net: str = state_data["currency_to"].upper()
     address: str = state_data["address"]
-    wallet_type: TypesWallet = TypesWallet.__dict__['_member_map_'][state_data["walletType"]]
+    wallet_type: TypesWallet = TypesWallet.__dict__["_member_map_"][
+        state_data["walletType"]
+    ]
     response = await WalletAPI.add_wallet(
         name_net=name_net, address=address, type_wallet=wallet_type
     )

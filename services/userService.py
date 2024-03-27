@@ -29,16 +29,19 @@ class UserService:
     async def statistic_user(user_id: int) -> dict[str, int]:
         favorite_category: dict[str:int] = dict()
         count_each_mission: dict[str:int] = {"WAIT": 0, "ACCEPTED": 0, "COMPLETED": 0}
-        user_missions: Sequence[Row | RowMapping | Any] = await SubmissionsAPI.select_missions(False, user_id, 0,
-                                                                                               Submissions, Wallets)
+        user_missions: Sequence[Row | RowMapping | Any] = (
+            await SubmissionsAPI.select_missions(
+                False, user_id, 0, Submissions, Wallets
+            )
+        )
         count_transaction: int = len(user_missions)
         total_amount: float = 0.0
         for mission in user_missions:
             favorite_category[mission.TypeTrans.value] = (
-                    favorite_category.get(mission.TypeTrans, 0) + 1
+                favorite_category.get(mission.TypeTrans, 0) + 1
             )
             count_each_mission[mission.Status.value] = (
-                    count_each_mission.get(mission.Status, 0) + 1
+                count_each_mission.get(mission.Status, 0) + 1
             )
             if mission.Status == Statuses.completed:
                 amount_from = (
@@ -66,15 +69,13 @@ class UserService:
 
     @staticmethod
     async def verif_number() -> int:
-        return random.randint(10 ** 5, 10 ** 6 - 1)
+        return random.randint(10**5, 10**6 - 1)
 
     @staticmethod
     async def statistic_admin() -> dict:
-        completed_submissions: Sequence[Row] = await SubmissionsAPI.select_missions(False,
-                                                                                    None,
-                                                                                    0,
-                                                                                    *(Submissions,),
-                                                                                    Status=Statuses.completed)
+        completed_submissions: Sequence[Row] = await SubmissionsAPI.select_missions(
+            False, None, 0, *(Submissions,), Status=Statuses.completed
+        )
         result = {
             "gainToDay": 0,
             "gainToWeek": 0,
@@ -104,7 +105,7 @@ class UserService:
             if result["maxExchangeAmount"] < amount_user:
                 result["maxExchangeAmount"] = amount_user
                 result["maxExchangeUserID"] = user.UserId
-                result["maxExchangeDateTime"]: datetime = mission.created_at
+                result["maxExchangeDateTime"] = mission.created_at
             result["gainTotal"] += amount_admin
         result["gainToDay"] = round(result["gainToDay"], 2)
         result["gainToWeek"] = round(result["gainToWeek"], 2)

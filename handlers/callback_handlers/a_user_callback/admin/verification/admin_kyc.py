@@ -23,7 +23,7 @@ router: Router = Router()
 
 @router.callback_query(KYCCallbackFactory.filter(F.page == "verifUser"))
 async def approve_verif_user(
-        callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot
+    callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot
 ) -> NoReturn:
     await AdminAPI.update_user(user_id=callback_data.user_id, KYC=True)
     await callback.message.answer(
@@ -44,7 +44,7 @@ async def approve_verif_user(
 
 @router.callback_query(KYCCallbackFactory.filter(F.page == "reject"))
 async def reject_verif_user(
-        callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot
+    callback: CallbackQuery, callback_data: KYCCallbackFactory, bot: Bot
 ) -> NoReturn:
     await callback.message.answer(
         text=botMessages["rejectVerifAdmin"].format(userID=callback_data.user_id),

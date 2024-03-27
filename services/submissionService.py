@@ -10,7 +10,7 @@ from databaseAPI.models.models import Statuses
 class SubmissionService:
     @staticmethod
     async def preprocess_mission_data(
-        mission_data: Sequence[Row | RowMapping | Any]
+        mission_data: Sequence[Row | RowMapping | Any],
     ) -> tuple[str, dict[str:str]]:
         result_dict = dict()
         result_text = list()
@@ -31,13 +31,11 @@ class SubmissionService:
         result: list = list()
         for missionStatus in ("WAIT", "ACCEPTED", "COMPLETED"):
             mission_status: Statuses = Statuses[missionStatus.lower()]
-            count_mission: int = len(await SubmissionsAPI.select_missions(
-                False,
-                None,
-                0,
-                *(Submissions,),
-                Status=mission_status
-            ))
+            count_mission: int = len(
+                await SubmissionsAPI.select_missions(
+                    False, None, 0, *(Submissions,), Status=mission_status
+                )
+            )
             text = f"<i>Количество <b>{missionStatus}</b> ⟶ <code>{count_mission}</code></i>"
             result.append(text)
         return "\n".join(result)

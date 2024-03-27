@@ -35,13 +35,16 @@ async def choice_rub_crypto(
     await StateService.set_states(
         state_name="currency_to", state_data=await state.get_data(), state=state
     )
-    wallets_dict: dict[str:str] = await WalletService.get_wallets("NameNet", typeWallet=TypesWallet[typeWallet])
+    wallets_dict: dict[str:str] = await WalletService.get_wallets(
+        "NameNet", typeWallet=TypesWallet[typeWallet]
+    )
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1
     )
     await callback.message.edit_text(
         text=botMessages["choiceToken"].format(
-            typeWallet=fiatOrCrypto[typeWallet.upper()], typeTransaction=writeGetOrSend["SEND"]
+            typeWallet=fiatOrCrypto[typeWallet.upper()],
+            typeTransaction=writeGetOrSend["SEND"],
         ),
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory,

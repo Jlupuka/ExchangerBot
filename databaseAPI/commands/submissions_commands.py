@@ -3,7 +3,7 @@ from typing import Sequence, Any, Union, Type
 from sqlalchemy import func, select, distinct, Select, RowMapping, Update, update, Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
 
 from databaseAPI.database import get_session
 from databaseAPI.models import Wallets, Submissions, Users

@@ -38,10 +38,10 @@ router: Router = Router()
     MissionCallbackFactory.filter(F.page.isdigit()), IsAdmin(checkAdminWork=True)
 )
 async def mission_data(
-        callback: CallbackQuery,
-        callback_data: MissionCallbackFactory,
-        state: FSMContext,
-        bot: Bot,
+    callback: CallbackQuery,
+    callback_data: MissionCallbackFactory,
+    state: FSMContext,
+    bot: Bot,
 ) -> NoReturn:
     await state.clear()
     await callback.message.delete()
@@ -53,8 +53,8 @@ async def mission_data(
         if mission_obj.Status.value != "COMPLETED":
             sendMission_copy = {**sendMission, **revokeButton}
         if (
-                mission_obj.TypeTrans.value.split("/")[1] == "CRYPTO"
-                and mission_obj.Status.value != "COMPLETED"
+            mission_obj.TypeTrans.value.split("/")[1] == "CRYPTO"
+            and mission_obj.Status.value != "COMPLETED"
         ):
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
                 amount=mission_obj.AmountFrom,
@@ -100,10 +100,10 @@ async def mission_data(
     IsAdmin(checkAdminWork=True),
 )
 async def get_missions_type(
-        callback: CallbackQuery,
-        callback_data: Union[AdminCallbackFactory, MissionCallbackFactory],
-        state: FSMContext,
-        bot: Bot,
+    callback: CallbackQuery,
+    callback_data: Union[AdminCallbackFactory, MissionCallbackFactory],
+    state: FSMContext,
+    bot: Bot,
 ) -> NoReturn:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
@@ -128,32 +128,36 @@ async def get_missions_type(
     IsAdmin(checkAdminWork=True),
 )
 async def missions_return(
-        callback: CallbackQuery,
-        callback_data: AdminCallbackFactory,
-        state: FSMContext,
-        bot: Bot,
+    callback: CallbackQuery,
+    callback_data: AdminCallbackFactory,
+    state: FSMContext,
+    bot: Bot,
 ) -> NoReturn:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     try:
-        mission_status: Statuses = Statuses.__dict__['_member_map_'][callback_data.page]
+        mission_status: Statuses = Statuses.__dict__["_member_map_"][callback_data.page]
         missions_data: Sequence[Row | RowMapping | Any] = (
-            await SubmissionsAPI.select_missions(True,
-                                                 None,
-                                                 callback_data.mission_page,
-                                                 *(Submissions,),
-                                                 Status=mission_status)
+            await SubmissionsAPI.select_missions(
+                True,
+                None,
+                callback_data.mission_page,
+                *(Submissions,),
+                Status=mission_status,
+            )
         )
         if missions_data:
             mission_count: int = len(missions_data)
-            mission_count_total: int = len(await SubmissionsAPI.select_missions(
-                False,
-                None,
-                0,
-                *(Submissions,),
-                Status=mission_status,
-            ))
+            mission_count_total: int = len(
+                await SubmissionsAPI.select_missions(
+                    False,
+                    None,
+                    0,
+                    *(Submissions,),
+                    Status=mission_status,
+                )
+            )
             text, preprocess_mission = await SubmissionService.preprocess_mission_data(
                 mission_data=missions_data
             )

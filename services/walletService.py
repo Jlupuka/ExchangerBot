@@ -1,6 +1,6 @@
 import random
 import re
-from typing import Union, Sequence, Any
+from typing import Sequence, Any
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets

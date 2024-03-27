@@ -51,10 +51,14 @@ class WalletAPI:
         **kwargs: dict[str:Any],
     ) -> Sequence[Wallets]:
         async with get_session() as session:
-            args = [Wallets] if not args else [getattr(Wallets, table) for table in args if hasattr(Wallets, table)]
-            sql: Select = select(
-                *args
-            ).where(
+            args = (
+                [Wallets]
+                if not args
+                else [
+                    getattr(Wallets, table) for table in args if hasattr(Wallets, table)
+                ]
+            )
+            sql: Select = select(*args).where(
                 *[
                     getattr(Wallets, __key) == __value
                     for __key, __value in kwargs.items()

@@ -20,8 +20,7 @@ async def profile_handler(
         text=botMessages["profileTextUser"].format(
             userID=user.UserId,
             KYCStatus=kycVerificationLexicon[user.KYC],
-            dateRegistration=await UserService.format_date_string(
-                date=user.created_at),
+            dateRegistration=await UserService.format_date_string(date=user.created_at),
         ),
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory,
