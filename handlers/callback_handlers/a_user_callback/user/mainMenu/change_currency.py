@@ -5,6 +5,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from databaseAPI.models import Wallets
 from databaseAPI.models.models import TypesWallet
 from lexicon.lexicon import (
     botMessages,
@@ -36,7 +37,7 @@ async def choice_rub_crypto(
         state_name="currency_to", state_data=await state.get_data(), state=state
     )
     wallets_dict: dict[str:str] = await WalletService.get_wallets(
-        "NameNet", typeWallet=TypesWallet[typeWallet]
+        Wallets.NameNet, typeWallet=TypesWallet[typeWallet]
     )
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1

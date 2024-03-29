@@ -1,4 +1,4 @@
-from typing import NoReturn
+from typing import NoReturn, Sequence
 
 from aiogram import Router, Bot
 from aiogram import F
@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
+from databaseAPI.models import Submissions, Wallets, Users
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
     botMessages,
@@ -38,8 +39,8 @@ async def check_revoke_mission(
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj, _, _ = await SubmissionsAPI.get_mission_data(
-        mission_id=callback_data.mission_id
+    mission_obj: Sequence[Submissions] = await SubmissionsAPI.select_missions(
+        False, None, 0, *(Submissions,), Id=callback_data.mission_id
     )
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.sure)
@@ -72,8 +73,8 @@ async def get_message_to_revoke(
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj, _, _ = await SubmissionsAPI.get_mission_data(
-        mission_id=callback_data.mission_id
+    mission_obj: Sequence[Submissions] = await SubmissionsAPI.select_missions(
+        False, None, 0, *(Submissions,), Id=callback_data.mission_id
     )
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.message)
@@ -104,9 +105,11 @@ async def revoke_mission(
     bot: Bot,
 ) -> NoReturn:
     state_data = await state.get_data()
-    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(
-        mission_id=callback_data.mission_id
-    )
+    mission_obj, wallet_obj, user = (
+        await SubmissionsAPI.select_missions(
+            False, None, 0, *(Submissions, Wallets, Users), Id=callback_data.mission_id
+        )
+    )[0]
     type_revoke = state_data["typeRevoke"]
     message = state_data.get("messageRevoke", None)
     await callback.message.edit_text(

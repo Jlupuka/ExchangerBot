@@ -5,6 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from databaseAPI.models import Wallets
 from databaseAPI.models.models import TypesWallet
 from filters.filters import IsToken
 from lexicon.lexicon import (
@@ -94,7 +95,7 @@ async def crypto_method(
         state_name="get_sum_crypto", state_data=await state.get_data(), state=state
     )
     wallets_dict: dict[str:str] = await WalletService.get_wallets(
-        "NameNet", typeWallet=TypesWallet.crypto
+        Wallets.NameNet, typeWallet=TypesWallet.crypto
     )
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1

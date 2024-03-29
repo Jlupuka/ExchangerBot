@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.models import Users
+from databaseAPI.models import Users, Submissions
 from databaseAPI.models.models import Statuses
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
@@ -42,9 +42,11 @@ async def get_missions(
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
     if callback_data.page != callback_data.back_page:
-        mission_obj, _, user_mission = await SubmissionsAPI.get_mission_data(
-            mission_id=callback_data.mission_id
-        )
+        mission_obj, user_mission = (
+            await SubmissionsAPI.select_missions(
+                False, None, 0, *(Submissions, Users), Id=callback_data.mission_id
+            )
+        )[0]
         if mission_obj.AdminId is None or mission_obj.AdminId == user.Id:
             oldStatus = mission_obj.Status
             if callback_data.page != "changeStatus":

@@ -2,7 +2,7 @@ from datetime import timedelta
 from typing import Sequence, Any, Union, Type
 from sqlalchemy import func, select, distinct, Select, RowMapping, Update, update, Row
 from sqlalchemy.engine.result import ChunkedIteratorResult
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import joinedload
 
 from databaseAPI.database import get_session
@@ -13,7 +13,7 @@ from services import logger
 
 class SubmissionsAPI:
     @staticmethod
-    async def add_application(**kwargs) -> Submissions:
+    async def add_application(**kwargs: dict[str:Any]) -> Submissions:
         async with get_session() as session:
             submission_object: Submissions = Submissions(**kwargs)
             session.add(submission_object)
@@ -45,24 +45,6 @@ class SubmissionsAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_mission_data(
-        mission_id: int,
-    ) -> tuple[Submissions, Wallets, Users]:
-        async with get_session() as session:
-            sql: Select = (
-                select(Submissions, Wallets, Users)
-                .join(Wallets, Submissions.wallet)
-                .join(Users, Submissions.user)
-                .where(Submissions.Id == mission_id)
-            )
-            mission, wallet, user = (
-                (None, None, None)
-                if not (response := (await session.execute(sql)).first())
-                else response
-            )
-            return mission, wallet, user
-
-    @staticmethod
     async def select_missions(
         pagination: bool,
         user_id: int = None,
@@ -89,7 +71,16 @@ class SubmissionsAPI:
             mission_chunk: ChunkedIteratorResult = await session.execute(
                 sql.limit(8).offset(offset * 8) if pagination else sql
             )
-            return mission_chunk.scalars().all()
+            try:
+                result = (
+                    mission_chunk.all()
+                    if len(args) > 1
+                    else mission_chunk.scalars().all()
+                )
+                return result
+            except NoResultFound as NRF:
+                logger.error(f"Indentation error in function '{__name__}': {NRF}")
+                await session.rollback()
 
     @staticmethod
     async def delete_mission_by_id(mission_id: int) -> None:

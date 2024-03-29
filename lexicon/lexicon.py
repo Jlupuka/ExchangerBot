@@ -212,7 +212,7 @@ botMessages: dict[str:str] = {
     "удалить его.</i></b>\n\n{patterns}",
     "deletePatterns": "<b><i>✅ Вы успешно удалили паттерн <code>{deletePattern}</code>.</i></b>\n\n{patterns}",
     "getTokenPattern": "<b><i>🔶 Введите короткое название валюты для этого паттнера.</i></b>",
-    "getPattern": "<b><i>🔶 Введите паттерн для этой валюты - <code>{token}</code></i></b>",
+    "getPattern": "<b><i>🔶 Введите паттерн для этой валюты — <code>{token}</code></i></b>",
     "sureAddedPattern": "<b><i>🔶 Вы уверены, что хотите добавить <code>{token}</code> -"
     " <code>{pattern}</code>?</i></b>",
     "addPatterns": "<b><i>✅ Вы успешно добавили новый паттнер!</i></b>\n\n{patterns}",
@@ -222,6 +222,9 @@ botMessages: dict[str:str] = {
     "updateMinSum": "<b><i>✅ Вы успешно обновили минимальную сумму ввода!\nНовая minimalSum ⟶"
     " <code>{updateMinSum}</code></i></b>",
     "verificationDeletePattern": "<b><i>🔶 Вы уверены, что хотите удалить паттерн сети <code>{pattern}</code>?</i></b>",
+    "getMnemonicNet": "🔶 Введите <b><i>мнемоническую фразу</i></b> сети <code>{token}</code>",
+    "addMnemonic": "✅ <b>Вы успешно добавили кошелек!\n"
+    "<i>Сеть</i> — <code>{token}</code>\n<i>Адрес</i> — <code>{address}</code></b>",
 }
 
 errorLexicon: dict[str:str] = {
@@ -253,6 +256,8 @@ errorLexicon: dict[str:str] = {
 <i>Такой паттерн уже существует!\n<b><i>Удалите нынешний и добавьте новый!</i></b>""",
     "IsDigitMinSum": """🔴 <b>ОШИБКА</b> 🔴
 Неверное сообщение! Не является числом - <code>{digit}</code>""",
+    "addMnemonic": """🔴 <b>ОШИБКА</b> 🔴
+Неверное мнемоническое значение <code>{token}</code> — <code>{mnemonic}</code>!""",
 }
 
 startCallbackUser: dict[str:str] = {
@@ -399,6 +404,8 @@ changeStatus: dict[str:str] = {
     "accepted": "accepted 📝",
     "completed": "completed 🏷️",
 }
+
+sendFunds: dict[str:str] = {"sendFunds": "Отправить средства 💸"}
 
 informationMissionUser: dict[str:str] = {"information": "📜 Информация"}
 

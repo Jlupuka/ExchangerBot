@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
+from databaseAPI.models import Wallets
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck
 from services.dataService import JsonService
@@ -95,7 +96,7 @@ class IsToken(BaseFilter):
         :return: (bool) Result to exist or not
         """
         token = self.factory.unpack(callback.data).page
-        token_in_base = await WalletAPI.get_all_name_net_wallets()
+        token_in_base = set(await WalletAPI.select_wallets(Wallets.NameNet))
         return token.upper() in token_in_base
 
 

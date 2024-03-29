@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.commands.walletAddress_commands import WalletAPI
-from databaseAPI.models import Users, Submissions
+from databaseAPI.models import Users, Submissions, Wallets
 from databaseAPI.models.models import Statuses
 from factories.factory import AdminCallbackFactory
 from filters.filters import IsAdmin
@@ -39,7 +39,7 @@ async def settings_handler(
             False, None, 0, *(Submissions,), Status=Statuses.wait
         )
     )
-    count_wallet: int = await WalletAPI.count_wallets()
+    count_wallet: int = len(await WalletAPI.select_wallets(Wallets.Id))
     count_admin_work: int = await AdminAPI.count_adminsWork()
     buttons: dict[str:str] = settingsMenu.copy()
     buttons["workType"] = workType[not admin_work_type]

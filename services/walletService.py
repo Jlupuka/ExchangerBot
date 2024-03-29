@@ -1,6 +1,12 @@
+import base64
+import os
 import random
 import re
 from typing import Sequence, Any
+
+from Crypto.Cipher import AES
+from Crypto.Cipher._mode_cfb import CfbMode
+from Crypto.Random import get_random_bytes
 
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets
@@ -76,8 +82,8 @@ class WalletService:
 
     @staticmethod
     async def random_wallet(name_net: str) -> Wallets:
-        wallets: Sequence[Wallets] = await WalletAPI.get_wallets_for_mission(
-            name_net=name_net
+        wallets: Sequence[Wallets] = await WalletAPI.select_wallets(
+            NameNet=name_net, Status=True
         )
         return random.choice(wallets)
 
@@ -86,3 +92,40 @@ class WalletService:
         wallets: Sequence[Wallets],
     ) -> list[tuple[int, str]]:
         return [(wallet.Id, wallet.Address) for wallet in wallets]
+
+    @staticmethod
+    async def check_token(token: str) -> bool:
+        return os.path.isdir(f"CryptoWalletAPI/{token.upper()}")
+
+    @staticmethod
+    async def encrypt_private_key(private_key: str, secret_key: bytes) -> str:
+        """Encrypt the private key using AES with the given secret key.
+
+        :param private_key: The private key to encrypt in hexadecimal format
+        :param secret_key: The secret key use for encryption
+        :return: The encrypted private key in base43-encoded format
+        """
+        iv: bytes = get_random_bytes(AES.block_size)
+        private_key_bytes: bytes = bytes.fromhex(private_key)
+        cipher: CfbMode = AES.new(key=secret_key, mode=AES.MODE_CFB, iv=iv)
+        encrypted_private_key: bytes = iv + cipher.encrypt(private_key_bytes)
+        return base64.b64encode(encrypted_private_key).decode("utf-8")
+
+    @staticmethod
+    async def decrypt_private_key(encrypted_private_key: str, secret_key: bytes) -> str:
+        """Decrypt the encrypted private key using AES with the given secret key.
+
+        :param encrypted_private_key: The encrypted private key in base64-encoded format
+        :param secret_key: The secret key to use for decryption
+        :return: The decrypted private key in hexadecimal format
+        """
+        encrypted_private_key_bytes = base64.b64decode(
+            encrypted_private_key.encode("utf-8")
+        )
+        iv: bytes = encrypted_private_key_bytes[:AES.block_size]
+        encrypted_private_key_bytes: bytes = encrypted_private_key_bytes[
+            AES.block_size:
+        ]
+        cipher: CfbMode = AES.new(key=secret_key, mode=AES.MODE_CFB, iv=iv)
+        private_key_bytes: bytes = cipher.decrypt(encrypted_private_key_bytes)
+        return private_key_bytes.hex()

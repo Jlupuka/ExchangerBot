@@ -25,7 +25,10 @@ class LoadService:
                 glob(join(handlers_dir, "**", "*.py"), recursive=True),
             )
         ]
-        modules.sort()
+        modules.sort(
+            key=lambda module: len(module) and ("admin" in module or "user" in module),
+            reverse=True,
+        )
         for module in modules:
             module_name = import_module(module)
             if hasattr(module_name, "router"):

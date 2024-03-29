@@ -8,8 +8,8 @@ from aiogram.types import CallbackQuery, FSInputFile
 from sqlalchemy import RowMapping, Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.models import Submissions
-from databaseAPI.models.models import Statuses
+from databaseAPI.models import Submissions, Wallets, Users
+from databaseAPI.models.models import Statuses, TypesTrans
 from filters.filters import IsAdmin
 from lexicon.lexicon import (
     botMessages,
@@ -19,6 +19,7 @@ from lexicon.lexicon import (
     changeStatus,
     listMissions,
     revokeButton,
+    sendFunds,
 )
 
 from keyboard.keyboard_factory import Factories
@@ -30,6 +31,7 @@ from factories.factory import (
 from services.qrCodeService import QRCodeService
 
 from services.submissionService import SubmissionService
+from services.walletService import WalletService
 
 router: Router = Router()
 
@@ -46,16 +48,24 @@ async def mission_data(
     await state.clear()
     await callback.message.delete()
     sendMission_copy: dict[str:str] = sendMission.copy()
-    mission_obj, wallet_obj, user = await SubmissionsAPI.get_mission_data(
-        mission_id=callback_data.mission_id
-    )
+    mission_obj, wallet_obj, user = (
+        await SubmissionsAPI.select_missions(
+            False,
+            None,
+            0,
+            *(Submissions, Wallets, Users),
+            Id=callback_data.mission_id,
+        )
+    )[0]
     if mission_obj:
         if mission_obj.Status != Statuses.completed:
             sendMission_copy = {**sendMission, **revokeButton}
         if (
-            mission_obj.TypeTrans.value.split("/")[1] == "CRYPTO"
+            mission_obj.TypeTrans in {TypesTrans.rub_crypto, TypesTrans.crypto_crypto}
             and mission_obj.Status != Statuses.completed
         ):
+            if await WalletService.check_token(mission_obj.CurrencyTo):
+                sendMission_copy = {**sendMission_copy, **sendFunds}
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
                 amount=mission_obj.AmountFrom,
                 crypto_currency=mission_obj.CurrencyTo,
@@ -64,7 +74,9 @@ async def mission_data(
             )
             photo: FSInputFile = FSInputFile(file_path)
             message = await bot.send_photo(chat_id=callback.from_user.id, photo=photo)
-            await state.update_data(photoId=message.message_id)
+            await state.update_data(
+                photoId=message.message_id, currencyTo=mission_obj.CurrencyTo
+            )
             await QRCodeService.delete_file(file_name=file_path)
         await bot.send_message(
             chat_id=callback.from_user.id,

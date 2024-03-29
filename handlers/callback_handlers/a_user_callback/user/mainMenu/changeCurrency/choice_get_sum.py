@@ -5,6 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from databaseAPI.models import Wallets
 from databaseAPI.models.models import TypesWallet
 
 from lexicon.lexicon import botMessages, backLexicon, fiatOrCrypto, writeGetOrSend
@@ -42,7 +43,7 @@ async def choice_method_get_sum(
     else:
         await state.set_state(FSMFiatCrypto.type_fiat)
     wallets_dict: dict[str:str] = await WalletService.get_wallets(
-        "NameNet", typeWallet=TypesWallet[typeTransaction.lower()]
+        Wallets.NameNet, typeWallet=TypesWallet[typeTransaction.lower()]
     )
     size: tuple[int, ...] = await WalletService.get_size_wallet(
         len_wallet=len(wallets_dict), count_any_button=1

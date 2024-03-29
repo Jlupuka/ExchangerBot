@@ -6,7 +6,7 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-
+from databaseAPI.models import Wallets
 from filters.filters import IsAdmin
 from lexicon.lexicon import botMessages, walletsMenu
 
@@ -23,7 +23,7 @@ async def wallets_handler(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
 ) -> NoReturn:
     await state.clear()
-    wallets_dict: dict[str:str] = await WalletService.get_wallets("NameNet")
+    wallets_dict: dict[str:str] = await WalletService.get_wallets(Wallets.NameNet)
     wallets_menu: dict[str:str] = walletsMenu.copy()
     if wallets_dict:
         wallets_menu = {

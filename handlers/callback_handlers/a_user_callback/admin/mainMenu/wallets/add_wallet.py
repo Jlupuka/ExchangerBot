@@ -44,17 +44,21 @@ async def add_wallet_handler(
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == "repeat"), IsAdmin())
-async def repeat_get_crypto_address(
+async def repeat_get_wallet_address(
     callback: CallbackQuery, state: FSMContext
 ) -> NoReturn:
     now_state: str = await state.get_state()
     text = "aaa"
-    if now_state == FSMAddWallet.type_wallet:
-        text: str = botMessages["getNameNet"]
-        await state.set_state(FSMAddWallet.address)
-    elif now_state == FSMAddWallet.address:
-        text: str = botMessages["addWallet"]
-        await state.set_state(FSMAddWallet.currency_to)
+    match now_state:
+        case FSMAddWallet.type_wallet:
+            text: str = botMessages["getNameNet"]
+            await state.set_state(FSMAddWallet.address)
+        case FSMAddWallet.address:
+            text: str = botMessages["addWallet"]
+            await state.set_state(FSMAddWallet.currency_to)
+        case FSMAddWallet.mnemonic:
+            token: str = (await state.get_data())["currency_to"].upper()
+            text: str = botMessages["getMnemonicNet"].format(token=token)
     await callback.message.edit_text(
         text=text,
         reply_markup=await Factories.create_fac_menu(
@@ -104,7 +108,7 @@ async def add_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     response = await WalletAPI.add_wallet(
         name_net=name_net, address=address, type_wallet=wallet_type
     )
-    if response is None:
+    if response:
         await callback.message.edit_text(
             text=successfullyMessage["addWallet"].format(
                 nameNet=name_net, address=address, walletType=wallet_type.value

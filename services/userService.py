@@ -7,7 +7,7 @@ from sqlalchemy.engine import Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
-from databaseAPI.models import Wallets, Submissions
+from databaseAPI.models import Submissions
 from databaseAPI.models.models import Users, Statuses
 from services.cryptoService import CryptoCheck
 
@@ -34,12 +34,11 @@ class UserService:
             Statuses.completed.value: 0,
         }
         user_missions: Sequence[Row | RowMapping | Any] = (
-            await SubmissionsAPI.select_missions(
-                False, user_id, 0, Submissions, Wallets
-            )
+            await SubmissionsAPI.select_missions(False, user_id, 0, Submissions)
         )
         count_transaction: int = len(user_missions)
         total_amount: float = 0.0
+        print(user_missions)
         for mission in user_missions:
             favorite_category[mission.TypeTrans.value] = (
                 favorite_category.get(mission.TypeTrans.value, 0) + 1

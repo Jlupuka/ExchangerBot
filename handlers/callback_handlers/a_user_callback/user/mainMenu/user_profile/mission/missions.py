@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery
 from sqlalchemy import RowMapping, Row
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.models import Submissions
+from databaseAPI.models import Submissions, Wallets
 from databaseAPI.models.models import Statuses
 from lexicon.lexicon import (
     botMessages,
@@ -96,8 +96,12 @@ async def accepted_missions_handler(
 async def information_mission(
     callback: CallbackQuery, callback_data: MissionCallbackFactory
 ) -> NoReturn:
-    mission_obj, wallet_obj, _ = await SubmissionsAPI.get_mission_data(
-        mission_id=callback_data.mission_id
+    mission_obj, wallet_obj = await SubmissionsAPI.select_missions(
+        False,
+        None,
+        0,
+        *(Submissions, Wallets),
+        Id=callback_data.mission_id
     )
     delete_mission = (
         {f"delete-{mission_obj.Id}": revokeButton["revoke"]}

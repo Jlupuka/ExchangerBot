@@ -28,11 +28,23 @@ class Admins:
 
 
 @dataclass
+class SecretKey:
+    SECRETKEY: bytes
+
+
+@dataclass
+class TronGridAPI:
+    APIKEY: str
+
+
+@dataclass
 class Config:
     TelegramBot: TokenBot
     DataBase: PostgreSQL
     Redis: RedisStorge
     AdminId: Admins
+    SecretKey: SecretKey
+    TronGridAPI: TronGridAPI
 
 
 def load_config(path: str | None = None) -> Config:
@@ -57,4 +69,6 @@ def load_config(path: str | None = None) -> Config:
                 if adm_id
             )
         ),
+        SecretKey=SecretKey(SECRETKEY=env("SECRETKEY").encode("utf-8")),
+        TronGridAPI=TronGridAPI(APIKEY=env("TRON-GRID-API"))
     )

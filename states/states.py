@@ -40,6 +40,7 @@ class FSMCryptoCrypto(StatesGroup):
 class FSMAddWallet(StatesGroup):
     currency_to = State()
     address = State()
+    mnemonic = State()
     type_wallet = State()
     check_correct = State()
 

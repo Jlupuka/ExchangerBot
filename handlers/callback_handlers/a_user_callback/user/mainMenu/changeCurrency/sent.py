@@ -15,12 +15,14 @@ from lexicon.lexicon import (
     sendMission,
     changeStatus,
     revokeButton,
+    sendFunds,
 )
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
 
 from services.userService import UserService
+from services.walletService import WalletService
 from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto
 
 router: Router = Router()
@@ -50,7 +52,7 @@ async def create_mission_FC(
     ]
     mission_obj: Submissions = await SubmissionsAPI.add_application(
         UserId=user_obj.Id,
-        AddressId=wallet_id,
+        WalletId=wallet_id,
         CurrencyTo=currency_to,
         AmountTo=amount_to,
         AmountFrom=amount_from,
@@ -70,6 +72,8 @@ async def create_mission_FC(
     )
     if admin_obj:
         sendMission_copy = {**sendMission, **revokeButton}
+        if await WalletService.check_token(mission_obj.CurrencyTo):
+            sendMission_copy = {**sendMission_copy, **sendFunds}
         await bot.send_message(
             chat_id=admin_obj.UserId,
             text=botMessages["sendMission"].format(

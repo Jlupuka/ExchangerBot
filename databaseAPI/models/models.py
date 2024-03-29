@@ -2,7 +2,7 @@ import enum
 import datetime
 from typing import Annotated, List, Optional
 
-from sqlalchemy import ForeignKey, text, BigInteger
+from sqlalchemy import ForeignKey, text, BigInteger, event
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from databaseAPI.database import Base
@@ -42,7 +42,7 @@ class Submissions(Base):
 
     Id: Mapped[intpka]
     UserId: Mapped[int] = mapped_column(ForeignKey("users.Id"), nullable=False)
-    AddressId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), nullable=False)
+    WalletId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), nullable=False)
     AmountTo: Mapped[float]
     AmountFrom: Mapped[float]
     CurrencyTo: Mapped[str]
@@ -54,8 +54,8 @@ class Submissions(Base):
     update_at: Mapped[update_at]
 
     wallet: Mapped["Wallets"] = relationship(
-        foreign_keys=[AddressId],
-        primaryjoin="Submissions.AddressId == Wallets.Id",
+        foreign_keys=[WalletId],
+        primaryjoin="Submissions.WalletId == Wallets.Id",
     )
 
     user: Mapped["Users"] = relationship(
@@ -98,3 +98,32 @@ class Wallets(Base):
     Status: Mapped[bool] = mapped_column(default=True)
     Percent: Mapped[float] = mapped_column(default=1.05)
     typeWallet: Mapped[TypesWallet]
+    MnemonicId: Mapped[Optional[int]] = mapped_column(ForeignKey("mnemonic.Id"))
+
+    mnemonic: Mapped[Optional["MnemonicWallets"]] = relationship(
+        back_populates="wallet", foreign_keys=[MnemonicId], cascade="all, delete"
+    )
+
+
+class MnemonicWallets(Base):
+    __tablename__ = "mnemonic"
+
+    Id: Mapped[intpka]
+    WalletId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), unique=True)
+    EncryptMnemonic: Mapped[str]
+
+    wallet: Mapped["Wallets"] = relationship(
+        foreign_keys=[WalletId], cascade="all, delete"
+    )
+
+
+@event.listens_for(MnemonicWallets, "after_insert")
+def receive_after_insert(mapper, connection, target: MnemonicWallets):
+    wallet_id = target.WalletId
+    mnemonic_id = target.Id
+
+    connection.execute(
+        Wallets.__table__.update()
+        .where(Wallets.Id == wallet_id)
+        .values(MnemonicId=mnemonic_id)
+    )

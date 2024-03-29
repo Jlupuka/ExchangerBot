@@ -5,6 +5,11 @@ from datetime import datetime
 from services.qrCodeService import QRCodeService
 
 
+class LoggerFilter(logging.Filter):
+    def filter(self, record):
+        return record.name not in {"httpx", "httpcore.http11"}
+
+
 # Создаем класс-наследник для изменения поведения logging.Formatter
 class ColoredFormatter(logging.Formatter):
     # Словарь с цветами для разных уровней логирования
@@ -53,7 +58,12 @@ reader_formatter = logging.Formatter(
 )
 reader_handler.setFormatter(reader_formatter)
 
+log_filter = LoggerFilter()
+
+
 logger = logging.getLogger()
+
+logger.addFilter(log_filter)
 
 logger.addHandler(handler)
 logger.addHandler(reader_handler)
