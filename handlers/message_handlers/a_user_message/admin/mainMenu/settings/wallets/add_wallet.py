@@ -129,7 +129,7 @@ async def get_mnemonic(message: Message, state: FSMContext) -> None:
         else:
             await message.answer(
                 text=errorLexicon["WalletExist"].format(
-                    nameNet=token, address=address, walletType=TypesWallet.crypto
+                    nameNet=token, address=address, walletType=TypesWallet.crypto.value
                 ),
                 reply_markup=await Factories.create_fac_menu(
                     AdminCallbackFactory,

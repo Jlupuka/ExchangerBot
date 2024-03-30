@@ -69,3 +69,7 @@ class FSMEditPatterns(StatesGroup):
     get_token_name = State()
     choice_pattern = State()
     check_sure = State()
+
+
+class FSMSendFunds(StatesGroup):
+    check_sure = State()

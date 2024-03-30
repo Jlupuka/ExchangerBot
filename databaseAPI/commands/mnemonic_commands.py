@@ -27,7 +27,7 @@ class MnemonicAPI:
     async def select_mnemonic(
         *args: Union[MnemonicWallets, InstrumentedAttribute[MnemonicWallets]],
         **kwargs: dict[str:Any],
-    ) -> Sequence[MnemonicWallets]:
+    ) -> Union[Sequence[MnemonicWallets], MnemonicWallets]:
         async with get_session() as session:
             sql: Select = (
                 select(*args)

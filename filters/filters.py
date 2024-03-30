@@ -1,9 +1,10 @@
-from typing import Type, Union
+from typing import Any, Type, Union
 
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
+from dataTemplates.data_templates import MnemonicData, SendData
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
@@ -135,3 +136,11 @@ class IsDigit(BaseFilter):
                 >= min_sum
             )
         return False
+
+
+class CheckSendFunds(BaseFilter):
+    async def __call__(self, callback: CallbackQuery, state: FSMContext) -> bool:
+        data: dict[str:Any] = await state.get_data()
+        mnemonic_data: MnemonicData = MnemonicData(**data["MnemonicData"])
+        send_data: SendData = SendData(**data["SendData"])
+        return mnemonic_data.balance - 3 >= send_data.amount

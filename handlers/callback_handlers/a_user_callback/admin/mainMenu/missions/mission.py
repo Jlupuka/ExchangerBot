@@ -64,7 +64,10 @@ async def mission_data(
             mission_obj.TypeTrans in {TypesTrans.rub_crypto, TypesTrans.crypto_crypto}
             and mission_obj.Status != Statuses.completed
         ):
-            if await WalletService.check_token(mission_obj.CurrencyTo):
+            if (
+                await WalletService.check_token(mission_obj.CurrencyTo)
+                and mission_obj.Status == Statuses.accepted
+            ):
                 sendMission_copy = {**sendMission_copy, **sendFunds}
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
                 amount=mission_obj.AmountFrom,

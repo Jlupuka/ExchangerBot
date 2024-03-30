@@ -72,8 +72,6 @@ async def create_mission_FC(
     )
     if admin_obj:
         sendMission_copy = {**sendMission, **revokeButton}
-        if await WalletService.check_token(mission_obj.CurrencyTo):
-            sendMission_copy = {**sendMission_copy, **sendFunds}
         await bot.send_message(
             chat_id=admin_obj.UserId,
             text=botMessages["sendMission"].format(

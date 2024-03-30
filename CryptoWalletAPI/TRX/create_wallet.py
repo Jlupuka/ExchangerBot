@@ -1,14 +1,6 @@
-from dataclasses import dataclass
 from tronpy import AsyncTron
 
-
-@dataclass
-class WalletTRX:
-    seed_phrases: str
-    base58check_address: str
-    hex_address: str
-    private_key: str
-    public_key: str
+from dataTemplates.data_templates import WalletTRX
 
 
 class TRX:

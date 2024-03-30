@@ -1,4 +1,6 @@
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
+
+from sqlalchemy.orm import joinedload
 
 from databaseAPI.models.models import TypesWallet
 from services import logger
@@ -34,8 +36,10 @@ class WalletAPI:
     @staticmethod
     async def select_wallets(
         *args: str,
+        special_filter: tuple[bool] = None,
+        mnemonic: bool = False,
         **kwargs: dict[str:Any],
-    ) -> Sequence[Wallets]:
+    ) -> Union[Sequence[Wallets], Wallets]:
         async with get_session() as session:
             args = [Wallets] if not args else args
             sql: Select = select(*args).where(
@@ -44,8 +48,12 @@ class WalletAPI:
                     for __key, __value in kwargs.items()
                 ]
             )
+            if mnemonic:
+                sql: Select = sql.options(joinedload(Wallets.mnemonic))
             try:
-                wallets: ChunkedIteratorResult = await session.execute(sql)
+                wallets: ChunkedIteratorResult = await session.execute(
+                    sql.where(*special_filter) if special_filter else sql
+                )
                 return wallets.scalars().all()
             except NoResultFound as NRF:
                 logger.error(f"Indentation error in function '{__name__}': {NRF}")

@@ -51,7 +51,7 @@ class SubmissionsAPI:
         offset: int = 0,
         *args: Type[Union[Wallets, Users, Submissions]],
         **kwargs: dict[str:Any],
-    ) -> Sequence[Row[Any] | RowMapping | Any]:
+    ) -> Sequence[Row[Any] | RowMapping | Any] | Submissions:
         async with get_session() as session:
             sql: Select = (
                 select(*args)

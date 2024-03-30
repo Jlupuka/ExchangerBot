@@ -1,8 +1,6 @@
 from tronpy import AsyncTron
 from tronpy.keys import PrivateKey
 
-from CryptoWalletAPI.TRX.client import Client
-
 
 class TrxAPI:
     def __init__(self, private_key: str, client: AsyncTron) -> None:
@@ -10,7 +8,7 @@ class TrxAPI:
         self.private_key = PrivateKey(private_key_bytes=bytes.fromhex(private_key))
         self.wallet = self.client.generate_address(priv_key=self.private_key)
 
-    async def send_trx(
+    async def send_funds(
         self, to_address: str, amount: int | float, memo: str = "any"
     ) -> dict:
         """
@@ -55,12 +53,3 @@ class TrxAPI:
     @property
     def address(self) -> str:
         return self.wallet["base58check_address"]
-
-
-async def main():
-    tron_obj = TrxAPI(
-        private_key="fsafsaf",
-        client=await Client().client,
-    )
-
-    return await tron_obj.get_balance()

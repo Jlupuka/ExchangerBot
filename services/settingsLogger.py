@@ -58,14 +58,14 @@ reader_formatter = logging.Formatter(
 )
 reader_handler.setFormatter(reader_formatter)
 
-log_filter = LoggerFilter()
-
-
 logger = logging.getLogger()
 
-logger.addFilter(log_filter)
+logger.addFilter(LoggerFilter())
 
 logger.addHandler(handler)
 logger.addHandler(reader_handler)
 
 logger.setLevel(logging.DEBUG)
+for name in {"httpcore.connection", "httpx", "httpcore.http11"}:
+    temp_logger = logging.getLogger(name)
+    temp_logger.setLevel(logging.WARNING)
