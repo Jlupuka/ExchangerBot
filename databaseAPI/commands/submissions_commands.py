@@ -120,7 +120,9 @@ class SubmissionsAPI:
                     Submissions.created_at >= now - timedelta(days=30),
                     Submissions.Status == Statuses.completed,
                 ),
-                "exchangeTotal": select(func.count(Submissions.Id)),
+                "exchangeTotal": select(func.count()).where(
+                    Submissions.Status == Statuses.completed
+                ),
                 "topWorker": select(Users.UserId)
                 .join_from(Submissions, Submissions.admin)
                 .filter(Submissions.AdminId is not None)
