@@ -29,12 +29,12 @@ class LoadService:
             key=lambda module: len(module) and ("admin" in module or "user" in module),
             reverse=True,
         )
-        for module in modules:
+        for index, module in enumerate(modules, start=1):
             module_name = import_module(module)
             if hasattr(module_name, "router"):
                 router = getattr(module_name, "router")
                 dp.include_router(router)
-                logger.debug(f"Success add handler {module}!")
+                logger.debug(f"#{index} Success add handler {module}!")
         logger.info("All handler have been loaded.")
 
     @staticmethod
