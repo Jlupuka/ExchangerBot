@@ -1,14 +1,16 @@
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import async_sessionmaker
-
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 from config.config import Config, load_config
-
 from services.settingsLogger import logger
 
 
@@ -48,9 +50,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     :return: None
     """
     try:
-        async with async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )() as session:
+        async with async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as session:
             yield session
     except Exception as ex:
         await session.rollback()

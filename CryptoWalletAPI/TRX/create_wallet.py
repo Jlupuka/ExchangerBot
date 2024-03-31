@@ -9,7 +9,8 @@ class TRX:
         self.client = client
 
     async def generate_wallet(self) -> WalletTRX:
-        wallet: tuple[dict[str], str] = self.client.generate_address_with_mnemonic(
-            self.private_key
-        )
+        """
+        Based on a mnemonic phrase, generates a TRX wallet
+        :return Wallet TRX"""
+        wallet: tuple[dict[str], str] = self.client.generate_address_with_mnemonic(self.private_key)
         return WalletTRX(wallet[1], **wallet[0])

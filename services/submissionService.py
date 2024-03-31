@@ -1,6 +1,6 @@
-from typing import Sequence, Any
+from typing import Any, Sequence
 
-from sqlalchemy import RowMapping, Row
+from sqlalchemy import Row, RowMapping
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.models import Submissions
@@ -12,6 +12,11 @@ class SubmissionService:
     async def preprocess_mission_data(
         mission_data: Sequence[Row | RowMapping | Any],
     ) -> tuple[str, dict[str:str]]:
+        """
+        Returns converted data for issuing missions data to administrators
+        :param mission_data: (Sequence[Submissions])
+        :return: (tuple[str, dict[str:str]]) first value - text message, second value - data for buttons
+        """
         result_dict = dict()
         result_text = list()
         for mission in sorted(mission_data, key=lambda data: data.Id):
@@ -28,14 +33,15 @@ class SubmissionService:
 
     @staticmethod
     async def get_count_each_missions() -> str:
+        """
+        Returns the number of submissions of each type
+        :return: (str)
+        """
         result: list = list()
-        for missionStatus in ("WAIT", "ACCEPTED", "COMPLETED"):
-            mission_status: Statuses = Statuses[missionStatus.lower()]
+        for missionStatus in (Statuses.wait, Statuses.accepted, Statuses.completed):
             count_mission: int = len(
-                await SubmissionsAPI.select_missions(
-                    False, None, 0, *(Submissions,), Status=mission_status
-                )
+                await SubmissionsAPI.select_missions(False, None, 0, *(Submissions,), Status=missionStatus)
             )
-            text = f"<i>Количество <b>{missionStatus}</b> ⟶ <code>{count_mission}</code></i>"
+            text = f"<i>Количество <b>{missionStatus.value}</b> ⟶ <code>{count_mission}</code></i>"
             result.append(text)
         return "\n".join(result)

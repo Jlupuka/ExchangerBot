@@ -1,7 +1,7 @@
+import json
 from typing import Any
 
 import aiofiles
-import json
 
 from services.cardService import CardCheck
 
@@ -21,12 +21,7 @@ class JsonService:
     async def get_token_patterns() -> dict[str:str]:
         token_patterns = {
             "rub": CardCheck.validate_luhn,
-            **{
-                key: pattern
-                for key, pattern in (
-                    await JsonService.get_specific_data(name_data="patterns")
-                ).items()
-            },
+            **{key: pattern for key, pattern in (await JsonService.get_specific_data(name_data="patterns")).items()},
         }
         return token_patterns
 

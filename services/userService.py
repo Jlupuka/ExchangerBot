@@ -1,6 +1,6 @@
-import random
 import datetime
-from typing import Sequence, Any
+import random
+from typing import Any, Sequence
 
 from sqlalchemy import RowMapping
 from sqlalchemy.engine import Row
@@ -8,44 +8,51 @@ from sqlalchemy.engine import Row
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.commands.userCommands.admin_commands import AdminAPI
 from databaseAPI.models import Submissions
-from databaseAPI.models.models import Users, Statuses
+from databaseAPI.models.models import Statuses, Users
 from services.cryptoService import CryptoCheck
 
 
 class UserService:
     @staticmethod
     async def random_admin() -> Users | None:
+        """
+        :return: (Users | None) A random administrator with a WorkType=True
+        """
         all_work_admins: list[Users] = await AdminAPI.select_work_admins()
         return random.choice(all_work_admins) if all_work_admins else None
 
     @staticmethod
     async def format_date_string(date: datetime.datetime) -> str | None:
+        """
+        Formats the date into a nicer look
+        :param date: (datetime.datetime)
+        :return: (str | None)
+        """
         formatted_string = None
         if date:
             formatted_string = date.strftime("%Y %B %d %H:%M")
         return formatted_string
 
     @staticmethod
-    async def statistic_user(user_id: int) -> dict[str, int]:
+    async def statistic_user(user_id: int) -> dict[str, Any]:
+        """
+        Returns the user's statistics
+        :param user_id: (int) user id
+        :return: (dict[str: Any])"""
         favorite_category: dict[str:int] = dict()
         count_each_mission: dict[str:int] = {
             Statuses.wait.value: 0,
             Statuses.accepted.value: 0,
             Statuses.completed.value: 0,
         }
-        user_missions: Sequence[Row | RowMapping | Any] = (
-            await SubmissionsAPI.select_missions(False, user_id, 0, Submissions)
+        user_missions: Sequence[Row | RowMapping | Any] = await SubmissionsAPI.select_missions(
+            False, user_id, 0, Submissions
         )
         count_transaction: int = len(user_missions)
         total_amount: float = 0.0
-        print(user_missions)
         for mission in user_missions:
-            favorite_category[mission.TypeTrans.value] = (
-                favorite_category.get(mission.TypeTrans.value, 0) + 1
-            )
-            count_each_mission[mission.Status.value] = (
-                count_each_mission.get(mission.Status.value, 0) + 1
-            )
+            favorite_category[mission.TypeTrans.value] = favorite_category.get(mission.TypeTrans.value, 0) + 1
+            count_each_mission[mission.Status.value] = count_each_mission.get(mission.Status.value, 0) + 1
             if mission.Status == Statuses.completed:
                 amount_from = (
                     await CryptoCheck.transaction_amount(
@@ -72,10 +79,18 @@ class UserService:
 
     @staticmethod
     async def verif_number() -> int:
+        """
+        Returns a random number to pass KYC
+        :return: (int)
+        """
         return random.randint(10**5, 10**6 - 1)
 
     @staticmethod
-    async def statistic_admin() -> dict:
+    async def statistic_admin() -> dict[str:Any]:
+        """
+        Returns statistics for admins
+        :return: (dict[str: Any])
+        """
         completed_submissions: Sequence[Row] = await SubmissionsAPI.select_missions(
             False, None, 0, *(Submissions,), Status=Statuses.completed
         )
@@ -117,7 +132,5 @@ class UserService:
         result["gainToWeek"] = round(result["gainToWeek"], 2)
         result["gainToMonth"] = round(result["gainToMonth"], 2)
         result["gainTotal"] = round(result["gainTotal"], 2)
-        result["maxExchangeDateTime"] = await UserService.format_date_string(
-            date=result["maxExchangeDateTime"]
-        )
+        result["maxExchangeDateTime"] = await UserService.format_date_string(date=result["maxExchangeDateTime"])
         return result

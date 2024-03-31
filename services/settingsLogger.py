@@ -5,11 +5,6 @@ from datetime import datetime
 from services.qrCodeService import QRCodeService
 
 
-class LoggerFilter(logging.Filter):
-    def filter(self, record):
-        return record.name not in {"httpx", "httpcore.http11"}
-
-
 # Создаем класс-наследник для изменения поведения logging.Formatter
 class ColoredFormatter(logging.Formatter):
     # Словарь с цветами для разных уровней логирования
@@ -44,23 +39,22 @@ handler.setFormatter(formatter)
 
 
 async def create_logs_directory():
+    """
+    Create a logs folder if it does not exist
+    """
     await QRCodeService.create_directory("logs")
 
 
 asyncio.run(create_logs_directory())
 
-reader_handler = logging.FileHandler(
-    f"logs/{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.log", mode="w"
-)
+reader_handler = logging.FileHandler(f"logs/{datetime.now().strftime('%Y-%m-%d %H-%M-%S')}.log", mode="w")
 reader_formatter = logging.Formatter(
-    "%(asctime)s  | #%(levelname)s |"
-    " %(filename)s:%(funcName)s:%(lineno)s | - %(name)s - | %(message)s"
+    "%(asctime)s  | #%(levelname)s |" " %(filename)s:%(funcName)s:%(lineno)s | - %(name)s - | %(message)s"
 )
 reader_handler.setFormatter(reader_formatter)
 
 logger = logging.getLogger()
 
-logger.addFilter(LoggerFilter())
 
 logger.addHandler(handler)
 logger.addHandler(reader_handler)

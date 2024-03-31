@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from environs import Env
 
 
@@ -62,13 +63,9 @@ def load_config(path: str | None = None) -> Config:
         Redis=RedisStorge(HOST=env("REDIS-HOST"), PORT=env("REDIS-PORT")),
         AdminId=Admins(
             ADMINID=list(
-                int(adm_id)
-                for adm_id in map(
-                    lambda admins: admins.strip(), env("ADMIN-ID").split(",")
-                )
-                if adm_id
+                int(adm_id) for adm_id in map(lambda admins: admins.strip(), env("ADMIN-ID").split(",")) if adm_id
             )
         ),
         SecretKey=SecretKey(SECRETKEY=env("SECRETKEY").encode("utf-8")),
-        TronGridAPI=TronGridAPI(APIKEY=env("TRON-GRID-API"))
+        TronGridAPI=TronGridAPI(APIKEY=env("TRON-GRID-API")),
     )

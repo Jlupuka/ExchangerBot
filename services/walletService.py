@@ -2,7 +2,7 @@ import base64
 import os
 import random
 import re
-from typing import Sequence, Any
+from typing import Any, Sequence
 
 from Crypto.Cipher import AES
 from Crypto.Cipher._mode_cfb import CfbMode
@@ -21,15 +21,10 @@ class WalletService:
         :return: (dict[str]) key is the name in lower case, value - in upper case
         """
         wallets_data: set[Any] = set(await WalletAPI.select_wallets(*args, **kwargs))
-        return {
-            wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}'
-            for wallet in sorted(wallets_data)
-        }
+        return {wallet.lower(): f'{wallet.upper()} {cryptoSymbol["symbol"]}' for wallet in sorted(wallets_data)}
 
     @staticmethod
-    async def get_size_wallet(
-        len_wallet: int, count_any_button: int = 0
-    ) -> tuple[int, ...]:
+    async def get_size_wallet(len_wallet: int, count_any_button: int = 0) -> tuple[int, ...]:
         """
         Returns a tuple of numbers, where the numbers indicate how many buttons will be on one line
         :param len_wallet: (int) how many main buttons there are
@@ -45,9 +40,7 @@ class WalletService:
         return tuple(result_wallet_size + [1] * count_any_button)
 
     @staticmethod
-    async def preprocess_wallets(
-        wallets: list[tuple[int, str]]
-    ) -> tuple[str, dict[str:str]]:
+    async def preprocess_wallets(wallets: list[tuple[int, str]]) -> tuple[str, dict[str:str]]:
         """
         Converts wallet data to text for easier to understand information and returns a dictionary to create buttons
         :param wallets: (list[tuple[int, str]]) list where values are a tuple with wallet data - id, address
@@ -62,8 +55,7 @@ class WalletService:
                 f'</code>{"" if index == len_wallets - 1 else line_feed}'
             )
             result_dict[f"TokenId-{wallets[index][0]}"] = (
-                f"🆔 {wallets[index][0]} | "
-                f"💳 {wallets[index][1][:6]}...{wallets[index][1][-4:]}"
+                f"🆔 {wallets[index][0]} | " f"💳 {wallets[index][1][:6]}...{wallets[index][1][-4:]}"
             )
         return "\n".join(sorted(result_text.split("\n"))), {
             address_id: result_dict[address_id] for address_id in sorted(result_dict)
@@ -82,28 +74,41 @@ class WalletService:
 
     @staticmethod
     async def random_wallet(name_net: str) -> Wallets:
-        wallets: Sequence[Wallets] = await WalletAPI.select_wallets(
-            NameNet=name_net, Status=True
-        )
+        """
+        Outputs a random wallet from a specific network
+        :param name_net: (str) wallet network
+        :return: (Wallets)
+        """
+        wallets: Sequence[Wallets] = await WalletAPI.select_wallets(NameNet=name_net, Status=True)
         return random.choice(wallets)
 
     @staticmethod
     async def preprocess_wallets_data(
         wallets: Sequence[Wallets],
     ) -> list[tuple[int, str]]:
+        """
+        Converts Wallets table data into easy to create buttons
+        :param wallets: (Sequence[Wallets])
+        :return: list[tuple[wallet.Id, wallet.Address]]
+        """
         return [(wallet.Id, wallet.Address) for wallet in wallets]
 
     @staticmethod
     async def check_token(token: str) -> bool:
+        """
+        Checks if there is an API folder with such token
+        :param token: (str) verified token
+        :return: bool
+        """
         return os.path.isdir(f"CryptoWalletAPI/{token.upper()}")
 
     @staticmethod
     async def encrypt_private_key(private_key: str, secret_key: bytes) -> str:
         """Encrypt the private key using AES with the given secret key.
 
-        :param private_key: The private key to encrypt in hexadecimal format
-        :param secret_key: The secret key use for encryption
-        :return: The encrypted private key in base43-encoded format
+        :param private_key: (str) The private key to encrypt in hexadecimal format
+        :param secret_key: (bytes) The secret key use for encryption
+        :return: (str) The encrypted private key in base43-encoded format
         """
         iv: bytes = get_random_bytes(AES.block_size)
         private_key_bytes: bytes = bytes.fromhex(private_key)
@@ -115,17 +120,13 @@ class WalletService:
     async def decrypt_private_key(encrypted_private_key: str, secret_key: bytes) -> str:
         """Decrypt the encrypted private key using AES with the given secret key.
 
-        :param encrypted_private_key: The encrypted private key in base64-encoded format
-        :param secret_key: The secret key to use for decryption
-        :return: The decrypted private key in hexadecimal format
+        :param encrypted_private_key: (str) The encrypted private key in base64-encoded format
+        :param secret_key: (str) The secret key to use for decryption
+        :return: (str) The decrypted private key in hexadecimal format
         """
-        encrypted_private_key_bytes = base64.b64decode(
-            encrypted_private_key.encode("utf-8")
-        )
+        encrypted_private_key_bytes = base64.b64decode(encrypted_private_key.encode("utf-8"))
         iv: bytes = encrypted_private_key_bytes[:AES.block_size]
-        encrypted_private_key_bytes: bytes = encrypted_private_key_bytes[
-            AES.block_size:
-        ]
+        encrypted_private_key_bytes: bytes = encrypted_private_key_bytes[AES.block_size:]
         cipher: CfbMode = AES.new(key=secret_key, mode=AES.MODE_CFB, iv=iv)
         private_key_bytes: bytes = cipher.decrypt(encrypted_private_key_bytes)
         return private_key_bytes.hex()

@@ -1,8 +1,9 @@
+from glob import glob
 from importlib import import_module
 from os.path import join
-from glob import glob
 
 from aiogram import Dispatcher
+
 from . import logger
 
 
@@ -38,9 +39,7 @@ class LoadService:
         logger.info("All handler have been loaded.")
 
     @staticmethod
-    async def load_middlewares(
-        dp: Dispatcher, middlewares_dir: str = "middlewares"
-    ) -> None:
+    async def load_middlewares(dp: Dispatcher, middlewares_dir: str = "middlewares") -> None:
         """
         Подключает все мидлвари находящиеся в папке middlewares(по умолчанию)(работает и с вложенными папками).
 
@@ -63,9 +62,7 @@ class LoadService:
             module_attributes = dir(module_name)
             # Ищем классы, название которых содержит "Middleware"
             middleware_classes = [
-                attr
-                for attr in module_attributes
-                if "Middleware" in attr and attr != "BaseMiddleware"
+                attr for attr in module_attributes if "Middleware" in attr and attr != "BaseMiddleware"
             ]
             for middleware_class in middleware_classes:
                 # Получаем объект класса middleware
