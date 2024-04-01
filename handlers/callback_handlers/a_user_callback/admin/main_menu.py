@@ -1,4 +1,4 @@
-from typing import NoReturn, Union
+from typing import Union
 
 from aiogram import Router
 from aiogram import F
@@ -31,7 +31,7 @@ async def start_handler_admin(
     callback: CallbackQuery,
     callback_data: Union[AdminCallbackFactory | MissionCallbackFactory],
     state: FSMContext,
-) -> NoReturn:
+) -> None:
     await state.clear()
     await callback.message.edit_text(
         text=botMessages["startMessageAdmin"],

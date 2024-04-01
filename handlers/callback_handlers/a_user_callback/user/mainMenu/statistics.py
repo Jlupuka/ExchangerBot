@@ -1,5 +1,5 @@
 import json
-from typing import Any, NoReturn
+from typing import Any
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -16,7 +16,7 @@ router: Router = Router()
 @router.callback_query(UserCallbackFactory.filter(F.page == "statistics"))
 async def statistics_handler(
     callback: CallbackQuery, callback_data: UserCallbackFactory, redis: Redis
-) -> NoReturn:
+) -> None:
     match (data := (await redis.get(f"{callback.from_user.id}:statistic"))):
         case None:
             data: dict[str:Any] = await UserService.statistic_user(

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Union
 
 from environs import Env
 
@@ -48,7 +49,12 @@ class Config:
     TronGridAPI: TronGridAPI
 
 
-def load_config(path: str | None = None) -> Config:
+def load_config(path: Union[str, None] = None) -> Config:
+    """
+    Loads all data from env and returns it as a dataclass
+    :param path: (Union[str, None]) the path where the env is stored
+    :return: (Config)
+    """
     env = Env()
     env.read_env(path=path)
     return Config(

@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router
 from aiogram import F
 from aiogram.filters import StateFilter
@@ -25,7 +23,7 @@ router: Router = Router()
 )
 async def delete_address_menu(
     callback: CallbackQuery, callback_data: AdminCallbackFactory
-) -> NoReturn:
+) -> None:
     sureDelete_copy = sureLexicon.copy()
     sureDelete_copy[callback_data.back_page] = sureDelete_copy.pop("no")
     await callback.message.edit_text(
@@ -39,7 +37,7 @@ async def delete_address_menu(
 @router.callback_query(
     AdminCallbackFactory.filter(F.page == "yes"), StateFilter(None), IsAdmin()
 )
-async def delete_address(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def delete_address(callback: CallbackQuery, state: FSMContext) -> None:
     state_data = await state.get_data()
     address_id = int(state_data["token"].split("-")[1])
     await WalletAPI.delete_wallet(wallet_id=address_id)

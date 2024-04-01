@@ -24,7 +24,7 @@ router: Router = Router()
 async def send_any_callback(
     callback: CallbackQuery,
     callback_data: Union[
-        UserCallbackFactory | AdminCallbackFactory | MissionCallbackFactory
+        UserCallbackFactory, AdminCallbackFactory, MissionCallbackFactory
     ],
     state: FSMContext,
 ) -> None:

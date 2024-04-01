@@ -1,5 +1,3 @@
-from typing import NoReturn, Sequence
-
 from aiogram import Router, Bot
 from aiogram import F
 from aiogram.filters import StateFilter
@@ -35,7 +33,7 @@ async def check_revoke_mission(
     callback_data: MissionCallbackFactory,
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
@@ -69,7 +67,7 @@ async def get_message_to_revoke(
     callback_data: MissionCallbackFactory,
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
@@ -103,7 +101,7 @@ async def revoke_mission(
     callback_data: MissionCallbackFactory,
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     state_data = await state.get_data()
     mission_obj, user = (
         await SubmissionsAPI.select_missions(

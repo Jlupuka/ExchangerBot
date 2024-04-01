@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router
 from aiogram import F
 from aiogram.filters import StateFilter
@@ -30,7 +28,7 @@ router: Router = Router()
 )
 async def print_wallets(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.clear()
     await state.update_data(name_net=callback_data.page)
     wallets = await WalletAPI.select_wallets(NameNet=callback_data.page.upper())
@@ -58,7 +56,7 @@ async def print_wallets(
 )
 async def address_menu(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.update_data(token=callback_data.page)
     state_data = await state.get_data()
     await callback.message.edit_text(
@@ -80,7 +78,7 @@ async def address_menu(
 )
 async def address_edit(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.set_state(None)
     state_data = await state.get_data()
     wallet_id = int(state_data["token"].split("-")[1])
@@ -113,7 +111,7 @@ async def address_edit(
     StateFilter(None, FSMPercentEdit.check_percent),
     IsAdmin(),
 )
-async def percent_edit(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def percent_edit(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(FSMPercentEdit.get_percent)
     state_data: dict[str:str] = await state.get_data()
     back_page: str = state_data["token"]
@@ -130,7 +128,7 @@ async def percent_edit(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     StateFilter(FSMPercentEdit.check_percent),
     IsAdmin(),
 )
-async def update_percent_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def update_percent_wallet(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(None)
     state_data = await state.get_data()
     wallet_id = int(state_data["token"].split("-")[1])

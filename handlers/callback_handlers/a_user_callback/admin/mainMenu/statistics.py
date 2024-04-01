@@ -1,5 +1,5 @@
 import json
-from typing import NoReturn, Any
+from typing import Any
 
 from aiogram import Router, Bot
 from aiogram import F
@@ -20,7 +20,7 @@ router: Router = Router()
 @router.callback_query(AdminCallbackFactory.filter(F.page == "statistics"), IsAdmin())
 async def statistics_handler(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, bot: Bot, redis: Redis
-) -> NoReturn:
+) -> None:
     match data := (await redis.get("static:admin")):
         case None:
             mission_data: dict[str:Any] = await SubmissionsAPI.get_statistic_data()

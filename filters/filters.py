@@ -9,7 +9,7 @@ from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from services.walletService import WalletService
 
 
@@ -140,6 +140,12 @@ class IsDigit(BaseFilter):
 
 class CheckSendFunds(BaseFilter):
     async def __call__(self, callback: CallbackQuery, state: FSMContext) -> bool:
+        """
+        Filter for admin. Whether it is possible to send funds from a working wallet or not
+        :param callback: (CallbackQuery)
+        :param state: (FSMContext)
+        :return: (bool)
+        """
         data: dict[str:Any] = await state.get_data()
         mnemonic_data: MnemonicData = MnemonicData(**data["MnemonicData"])
         send_data: SendData = SendData(**data["SendData"])

@@ -14,6 +14,11 @@ from services import logger
 class SubmissionsAPI:
     @staticmethod
     async def add_application(**kwargs: dict[str:Any]) -> Submissions:
+        """
+        Adds  data to the mnemonics table
+        :param kwargs: (dict[str:Any]) Information about mnemonics
+        :return: MnemonicWallets
+        """
         async with get_session() as session:
             submission_object: Submissions = Submissions(**kwargs)
             session.add(submission_object)
@@ -29,6 +34,12 @@ class SubmissionsAPI:
     async def update_mission(
         submission_id: int, **kwargs: dict[str:Any]
     ) -> Submissions:
+        """
+        By the mission id, updates it with the passed parameters
+        :param submission_id: (int) mission id
+        :param kwargs: (dict[str:Any]) Mission Parameters
+        :return: Submissions
+        """
         async with get_session() as session:
             sql: Update = (
                 update(Submissions)
@@ -47,11 +58,20 @@ class SubmissionsAPI:
     @staticmethod
     async def select_missions(
         pagination: bool,
-        user_id: int = None,
+        user_id: Union[int, None] = None,
         offset: int = 0,
         *args: Type[Union[Wallets, Users, Submissions]],
         **kwargs: dict[str:Any],
-    ) -> Sequence[Row[Any] | RowMapping | Any] | Submissions:
+    ) -> Union[Sequence[Union[Row[Any], RowMapping, Any]], Submissions]:
+        """
+        Returns data on the specified parameters from the Submissions table
+        :param pagination: (bool)
+        :param user_id: (Union[int, None]) user id
+        :param offset: (int) if pagination true
+        :param args: (Type[Union[Wallets, Users, Submissions]])
+        :param kwargs: (dict[str:Any]) Information about mission
+        :return: Union[Sequence[Union[Row[Any], RowMapping, Any]], Submissions]
+        """
         async with get_session() as session:
             sql: Select = (
                 select(*args)
@@ -84,6 +104,11 @@ class SubmissionsAPI:
 
     @staticmethod
     async def delete_mission_by_id(mission_id: int) -> None:
+        """
+        Deletes a mission by its ID
+        :param mission_id: (int)
+        :return:
+        """
         async with get_session() as session:
             submission: Submissions = await session.get(Submissions, mission_id)
             try:
@@ -95,7 +120,11 @@ class SubmissionsAPI:
                 await session.rollback()
 
     @staticmethod
-    async def get_statistic_data() -> dict:
+    async def get_statistic_data() -> dict[str:Any]:
+        """
+        Returns statistics on the mission
+        :return: dict[str:Any]
+        """
         async with get_session() as session:
             now = func.now()
             queries = {

@@ -1,6 +1,4 @@
-from typing import Any, Sequence
-
-from sqlalchemy import Row, RowMapping
+from typing import Sequence, Union
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
 from databaseAPI.models import Submissions
@@ -10,7 +8,7 @@ from databaseAPI.models.models import Statuses
 class SubmissionService:
     @staticmethod
     async def preprocess_mission_data(
-        mission_data: Sequence[Row | RowMapping | Any],
+        mission_data: Sequence[Union[Submissions]],
     ) -> tuple[str, dict[str:str]]:
         """
         Returns converted data for issuing missions data to administrators
@@ -40,7 +38,9 @@ class SubmissionService:
         result: list = list()
         for missionStatus in (Statuses.wait, Statuses.accepted, Statuses.completed):
             count_mission: int = len(
-                await SubmissionsAPI.select_missions(False, None, 0, *(Submissions,), Status=missionStatus)
+                await SubmissionsAPI.select_missions(
+                    False, None, 0, *(Submissions,), Status=missionStatus
+                )
             )
             text = f"<i>Количество <b>{missionStatus.value}</b> ⟶ <code>{count_mission}</code></i>"
             result.append(text)

@@ -10,7 +10,7 @@ from keyboard.keyboard_factory import Factories
 from lexicon.lexicon import botMessages, backLexicon, getSum
 
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from services.stateService import StateService
 from states.states import FSMCryptoFiat, FSMCryptoCrypto
 
@@ -68,5 +68,11 @@ async def check_the_correct_transaction_CC_CF(
         ),
     )
     await StateService.set_states(
-        state_name="check_validate_sum", state_data=state_data, state=state
+        state_name=(
+            "check_validate_sum"
+            if not state_data.get("WalletData")
+            else "check_validate_mnemonic_sum"
+        ),
+        state_data=state_data,
+        state=state,
     )

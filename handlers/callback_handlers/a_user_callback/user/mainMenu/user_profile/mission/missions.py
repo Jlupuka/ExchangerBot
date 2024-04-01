@@ -1,4 +1,4 @@
-from typing import NoReturn, Sequence, Any
+from typing import Sequence, Any
 
 from aiogram import Router, exceptions, F
 from aiogram.types import CallbackQuery
@@ -27,7 +27,7 @@ router: Router = Router()
 @router.callback_query(MissionCallbackFactory.filter(F.page == "missions"))
 async def missions_handler(
     callback: CallbackQuery, callback_data: UserCallbackFactory
-) -> NoReturn:
+) -> None:
     await callback.message.edit_text(
         text=botMessages["missionsTextUser"],
         reply_markup=await Factories.create_fac_menu(
@@ -45,7 +45,7 @@ async def missions_handler(
 )
 async def accepted_missions_handler(
     callback: CallbackQuery, callback_data: UserCallbackFactory
-) -> NoReturn:
+) -> None:
     try:
         mission_status: Statuses = Statuses[callback_data.page]
         missions_data: Sequence[Row | RowMapping | Any] = (
@@ -95,13 +95,9 @@ async def accepted_missions_handler(
 @router.callback_query(MissionCallbackFactory.filter(F.page == "information"))
 async def information_mission(
     callback: CallbackQuery, callback_data: MissionCallbackFactory
-) -> NoReturn:
+) -> None:
     mission_obj, wallet_obj = await SubmissionsAPI.select_missions(
-        False,
-        None,
-        0,
-        *(Submissions, Wallets),
-        Id=callback_data.mission_id
+        False, None, 0, *(Submissions, Wallets), Id=callback_data.mission_id
     )
     delete_mission = (
         {f"delete-{mission_obj.Id}": revokeButton["revoke"]}
@@ -135,7 +131,7 @@ async def information_mission(
 @router.callback_query(MissionCallbackFactory.filter(F.page.regexp(r"^delete-\d+$")))
 async def delete_user_mission(
     callback: CallbackQuery, callback_data: MissionCallbackFactory
-) -> NoReturn:
+) -> None:
     mission_id: str = callback_data.page.split("-")[1]
     await SubmissionsAPI.delete_mission_by_id(mission_id=int(mission_id))
     await callback.message.edit_text(

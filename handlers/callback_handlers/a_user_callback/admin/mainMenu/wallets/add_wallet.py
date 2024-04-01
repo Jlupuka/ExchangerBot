@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router
 from aiogram import F
 from aiogram.filters import StateFilter
@@ -32,7 +30,7 @@ router: Router = Router()
 @router.callback_query(AdminCallbackFactory.filter(F.page == "addWallet"), IsAdmin())
 async def add_wallet_handler(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.clear()
     await state.set_state(FSMAddWallet.currency_to)
     await callback.message.edit_text(
@@ -44,9 +42,7 @@ async def add_wallet_handler(
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == "repeat"), IsAdmin())
-async def repeat_get_wallet_address(
-    callback: CallbackQuery, state: FSMContext
-) -> NoReturn:
+async def repeat_get_wallet_address(callback: CallbackQuery, state: FSMContext) -> None:
     now_state: str = await state.get_state()
     text = "aaa"
     match now_state:
@@ -74,7 +70,7 @@ async def repeat_get_wallet_address(
 )
 async def check_add_wallet_data(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.update_data(walletType=callback_data.page)
     await state.set_state(FSMAddWallet.check_correct)
     state_data: dict[str:str] = await state.get_data()
@@ -100,7 +96,7 @@ async def check_add_wallet_data(
     StateFilter(FSMAddWallet.check_correct),
     IsAdmin(),
 )
-async def add_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def add_wallet(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str:str] = await state.get_data()
     name_net: str = state_data["currency_to"].upper()
     address: str = state_data["address"]

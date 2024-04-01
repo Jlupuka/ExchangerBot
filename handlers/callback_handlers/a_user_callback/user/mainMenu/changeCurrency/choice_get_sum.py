@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -33,7 +31,7 @@ router: Router = Router()
 )
 async def choice_method_get_sum(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     state_data = await state.get_data()
     typeTransaction = state_data["typeTransaction"].split("-")[0]
     if typeTransaction == "CRYPTO":

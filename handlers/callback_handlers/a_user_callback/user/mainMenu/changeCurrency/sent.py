@@ -1,12 +1,9 @@
-from typing import NoReturn
-
 from aiogram import Router, Bot, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.commands.userCommands.user_commands import UserAPI
 from databaseAPI.models import Submissions, Users
 from databaseAPI.models.models import TypesTrans
 from lexicon.lexicon import (
@@ -15,14 +12,12 @@ from lexicon.lexicon import (
     sendMission,
     changeStatus,
     revokeButton,
-    sendFunds,
 )
 
 from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory, MissionCallbackFactory
 
 from services.userService import UserService
-from services.walletService import WalletService
 from states.states import FSMFiatCrypto, FSMCryptoFiat, FSMCryptoCrypto
 
 router: Router = Router()
@@ -34,9 +29,9 @@ router: Router = Router()
         FSMFiatCrypto.money_sent, FSMCryptoFiat.money_sent, FSMCryptoCrypto.money_sent
     ),
 )
-async def create_mission_FC(
-    callback: CallbackQuery, state: FSMContext, bot: Bot
-) -> NoReturn:
+async def create_mission(
+    callback: CallbackQuery, state: FSMContext, user: Users, bot: Bot
+) -> None:
     state_data: dict[str:str] = await state.get_data()
     walletCurrency: str = state_data["WalletCurrency"]
     currency_to: str = state_data["currency_to"]
@@ -45,13 +40,12 @@ async def create_mission_FC(
     amount_to: float = state_data["amount_to"]
     amount_from: int = state_data["amount_from"]
     work_wallet: str = state_data["work_walletRequisites"]
-    user_obj: Users = (await UserAPI.select_user(UserId=callback.from_user.id))[0]
     admin_obj: Users | None = await UserService.random_admin()
     type_trans: TypesTrans = TypesTrans[
         state_data["typeTransaction"].replace("-", "_").lower()
     ]
     mission_obj: Submissions = await SubmissionsAPI.add_application(
-        UserId=user_obj.Id,
+        UserId=user.Id,
         WalletId=wallet_id,
         CurrencyTo=currency_to,
         AmountTo=amount_to,

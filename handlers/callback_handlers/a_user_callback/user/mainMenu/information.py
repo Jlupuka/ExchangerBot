@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
 
@@ -13,7 +11,7 @@ router: Router = Router()
 @router.callback_query(UserCallbackFactory.filter(F.page == "info"))
 async def info_handler(
     callback: CallbackQuery, callback_data: UserCallbackFactory, bot: Bot
-) -> NoReturn:
+) -> None:
     await callback.message.edit_text(
         text=botMessages["informationUser"].format(
             botName=(await bot.get_me()).username

@@ -1,4 +1,5 @@
 from tronpy import AsyncTron
+from tronpy.exceptions import AddressNotFound
 from tronpy.keys import PrivateKey
 
 
@@ -8,7 +9,9 @@ class TrxAPI:
         self.private_key = PrivateKey(private_key_bytes=bytes.fromhex(private_key))
         self.wallet = self.client.generate_address(priv_key=self.private_key)
 
-    async def send_funds(self, to_address: str, amount: int | float, memo: str = "any") -> dict:
+    async def send_funds(
+        self, to_address: str, amount: int | float, memo: str = "any"
+    ) -> dict:
         """
         Sends TRX to the specified wallet
         :param to_address: (str) Wallet where the funds will be sent
@@ -31,21 +34,31 @@ class TrxAPI:
         tx_wait = await transaction_ret.wait()
         return tx_wait
 
-    async def get_balance(self) -> float:
+    @property
+    async def balance(self) -> float:
         """
         Returns the wallet balance to TRX
         :return: float
         """
-        return float(await self.client.get_account_balance(self.wallet["base58check_address"]))
+        return float(
+            await self.client.get_account_balance(self.wallet["base58check_address"])
+        )
 
     async def check_payment(self, amount: float) -> bool:
         """
         Returns whether the wallet has an input amount of funds or not
-        :param amount: number of funds
-        :return: bool
+        :param amount: (float) number of funds
+        :return: (bool)
         """
-        return (await self.get_balance()) >= amount
+        try:
+            return (await self.balance) >= amount
+        except AddressNotFound:
+            return False
 
     @property
     def address(self) -> str:
+        """
+        Return crypto address
+        :return: (str)
+        """
         return self.wallet["base58check_address"]

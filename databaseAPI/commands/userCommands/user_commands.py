@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 from sqlalchemy import select, Select, Update, update
 
@@ -36,11 +36,11 @@ class UserAPI:
                 await session.rollback()
 
     @staticmethod
-    async def select_user(**kwargs: dict[str:Any]) -> Sequence[Users]:
+    async def select_user(**kwargs: dict[str:Any]) -> Union[Sequence[Users], None]:
         """
-        Retrieve user data by user_id
-        :param kwargs:
-        :return: Users | None
+        Returns data on the specified parameters from the Users table
+        :param kwargs: (dict[str:Any]) User Parameters
+        :return: Users
         """
         async with get_session() as session:
             sql: Select = select(Users).where(
@@ -54,6 +54,12 @@ class UserAPI:
 
     @staticmethod
     async def update_user(user_id: int, **kwargs: dict[str:Any]) -> Users:
+        """
+        By the user id, updates it with the passed parameters
+        :param user_id: (int) user id
+        :param kwargs: (dict[str:Any]) Users Parameters
+        :return: Submissions
+        """
         async with get_session() as session:
             sql: Update = (
                 update(Users)
@@ -73,8 +79,8 @@ class UserAPI:
     async def check_user(user_id: int) -> Users:
         """
         Check, if there is no user - add to the database, otherwise - nothing
-        :param user_id:
-        :return: None
+        :param user_id: (int) User id
+        :return: Users
         """
         user: Sequence[Users] = await UserAPI.select_user(UserId=user_id)
         if not user:

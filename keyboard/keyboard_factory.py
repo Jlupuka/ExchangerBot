@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Union, Any
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -14,28 +14,26 @@ from lexicon.lexicon import backLexicon
 class Factories:
     @staticmethod
     async def create_fac_menu(
-        callback_factory: Type[UserCallbackFactory | AdminCallbackFactory],
+        callback_factory: Type[Union[AdminCallbackFactory, UserCallbackFactory]],
         width: int = 2,
-        back_page: str = None,
+        back_page: Union[None, str] = None,
         back_name: str = backLexicon["backLexicon"],
-        back: bool | str = False,
+        back: Union[bool, str] = False,
         sizes: tuple = None,
-        **kwargs: str
+        **kwargs: dict[str:str]
     ) -> InlineKeyboardMarkup:
         """
-        Create fac menu (inline keyboard) with specified parameters.
-        :param callback_factory: Callback factory to create callback data.
-        :param width: Number of buttons in a row. Default is 2.
-        :param back_page: Page to return when back button is clicked. Default is None.
-        :param back_name: Text for the back button. Default is 'Назад'.
-        :param back: If True, add a back button to the keyboard. If False, don't add a back button.
-        :param sizes: Sizes of the rows in the keyboard. Default is None.
-        :param kwargs: Key-value pairs where keys are page and values are button texts.
+        Create factory menu (inline keyboard) with specified parameters
+        :param callback_factory: (Type[Union[AdminCallbackFactory, UserCallbackFactory]])
+        :param width: (int) Number of buttons in a row. Default is 2.
+        :param back_page: (Union[None, str]) Page to return when back button is clicked. Default is None.
+        :param back_name: (str) Text for the back button. Default is 'Назад'.
+        :param back: (Union[bool, str]) If True, add a back button to the keyboard. If False, don't add a back button.
+        :param sizes: (int) Sizes of the rows in the keyboard. Default is None.
+        :param kwargs: (dict[str:str]) Key-value pairs where keys are page and values are button texts.
         :return: InlineKeyboardMarkup object with the created keyboard.
         """
-
         kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
-
         kb_builder.row(
             *[
                 InlineKeyboardButton(
@@ -72,12 +70,24 @@ class Factories:
         callback_factory: Type[MissionCallbackFactory],
         mission_id: int,
         back_name: str = backLexicon["backLexicon"],
-        back: bool | str | int = False,
-        back_page: None | str = None,
-        sizes: tuple = None,
+        back: Union[bool, str, int] = False,
+        back_page: Union[None, str] = None,
+        sizes: tuple[Any] = None,
         width: int = 2,
-        **kwargs
+        **kwargs: dict[str:str]
     ) -> InlineKeyboardMarkup:
+        """
+        Create factory mission (inline keyboard) with specified parameters
+        :param callback_factory: (MissionCallbackFactory)
+        :param mission_id: (int)
+        :param back_name: (str) Text for the back button. Default is 'Вернуться'.
+        :param back: (Union[bool, str, int])
+        :param back_page: (Union[None, str])
+        :param sizes: (tuple[Any]) how many buttons will be on the line
+        :param width: (int) how many buttons will be on the line, if you have not specified sizes
+        :param kwargs: (dict[str:str]) Key-value pairs where keys are page and values are button texts.
+        :return: InlineKeyboardMarkup object with the created keyboard.
+        """
         kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
         kb_builder.row(
@@ -112,7 +122,7 @@ class Factories:
 
     @staticmethod
     async def create_fac_pagination_missions(
-        factory: Type[AdminCallbackFactory | UserCallbackFactory],
+        factory: Union[Type[AdminCallbackFactory], Type[UserCallbackFactory]],
         back: str = None,
         back_page: str = None,
         back_name: str = backLexicon["backLexicon"],
@@ -120,10 +130,22 @@ class Factories:
         mission_count_total: int = 0,
         mission_page: int = 0,
         mission_status: str = "wait",
-        **kwargs
+        **kwargs: dict[str:str]
     ) -> InlineKeyboardMarkup:
+        """
+        Create factory (inline keyboard) with specified parameters and pagination
+        :param factory: (Type[Union[AdminCallbackFactory, UserCallbackFactory]])
+        :param back: (str)
+        :param back_page: (str)
+        :param back_name: (str) Text for the back button. Default is 'Вернуться'.
+        :param mission_count: (int) of missions in a certain status
+        :param mission_count_total: (int) total missions
+        :param mission_page: (int)
+        :param mission_status: (str)
+        :param kwargs: (dict[str:str]) Key-value pairs where keys are page and values are button texts
+        :return: InlineKeyboardMarkup object with the created keyboard.
+        """
         kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
-
         kb_builder.row(
             *[
                 InlineKeyboardButton(
@@ -183,8 +205,15 @@ class Factories:
 
     @staticmethod
     async def create_kyc_fac(
-        user_id: int, verif_number: int, **kwargs
+        user_id: int, verif_number: int, **kwargs: dict[str:str]
     ) -> InlineKeyboardMarkup:
+        """
+        Returns the keypad for passing KYC
+        :param user_id: (int) User id
+        :param verif_number: (int) Verification number
+        :param kwargs: (dict[str:str]) Key-value pairs where keys are page and values are button texts.
+        :return: (InlineKeyboardMarkup) InlineKeyboardMarkup object with the created keyboard.
+        """
         kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
         kb_builder.row(
             *[

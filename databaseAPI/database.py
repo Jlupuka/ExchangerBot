@@ -50,7 +50,9 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     :return: None
     """
     try:
-        async with async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)() as session:
+        async with async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )() as session:
             yield session
     except Exception as ex:
         await session.rollback()

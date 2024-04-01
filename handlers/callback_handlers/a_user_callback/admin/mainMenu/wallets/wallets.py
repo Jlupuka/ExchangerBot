@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router
 from aiogram import F
 
@@ -21,7 +19,7 @@ router: Router = Router()
 @router.callback_query(AdminCallbackFactory.filter(F.page == "wallets"), IsAdmin())
 async def wallets_handler(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.clear()
     wallets_dict: dict[str:str] = await WalletService.get_wallets(Wallets.NameNet)
     wallets_menu: dict[str:str] = walletsMenu.copy()

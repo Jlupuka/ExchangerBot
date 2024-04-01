@@ -27,7 +27,9 @@ class LoadService:
             )
         ]
         modules.sort(
-            key=lambda module: len(module) and ("admin" in module or "user" in module),
+            key=lambda module: len(module)
+            and ("admin" in module or "user" in module)
+            and ("error" not in module or "other" not in module),
             reverse=True,
         )
         for index, module in enumerate(modules, start=1):
@@ -39,7 +41,9 @@ class LoadService:
         logger.info("All handler have been loaded.")
 
     @staticmethod
-    async def load_middlewares(dp: Dispatcher, middlewares_dir: str = "middlewares") -> None:
+    async def load_middlewares(
+        dp: Dispatcher, middlewares_dir: str = "middlewares"
+    ) -> None:
         """
         Подключает все мидлвари находящиеся в папке middlewares(по умолчанию)(работает и с вложенными папками).
 
@@ -62,7 +66,9 @@ class LoadService:
             module_attributes = dir(module_name)
             # Ищем классы, название которых содержит "Middleware"
             middleware_classes = [
-                attr for attr in module_attributes if "Middleware" in attr and attr != "BaseMiddleware"
+                attr
+                for attr in module_attributes
+                if "Middleware" in attr and attr != "BaseMiddleware"
             ]
             for middleware_class in middleware_classes:
                 # Получаем объект класса middleware

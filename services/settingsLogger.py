@@ -47,9 +47,12 @@ async def create_logs_directory():
 
 asyncio.run(create_logs_directory())
 
-reader_handler = logging.FileHandler(f"logs/{datetime.now().strftime('%Y-%m-%d %H-%M-%S')}.log", mode="w")
+reader_handler = logging.FileHandler(
+    f"logs/{datetime.now().strftime('%Y-%m-%d %H-%M-%S')}.log", mode="w"
+)
 reader_formatter = logging.Formatter(
-    "%(asctime)s  | #%(levelname)s |" " %(filename)s:%(funcName)s:%(lineno)s | - %(name)s - | %(message)s"
+    "%(asctime)s  | #%(levelname)s |"
+    " %(filename)s:%(funcName)s:%(lineno)s | - %(name)s - | %(message)s"
 )
 reader_handler.setFormatter(reader_formatter)
 

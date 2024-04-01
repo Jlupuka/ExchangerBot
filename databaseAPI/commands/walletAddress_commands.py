@@ -1,6 +1,6 @@
 from typing import Any, Sequence, Union
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, InstrumentedAttribute
 
 from databaseAPI.models.models import TypesWallet
 from services import logger
@@ -17,7 +17,14 @@ class WalletAPI:
     @staticmethod
     async def add_wallet(
         name_net: str, address: str, type_wallet: TypesWallet
-    ) -> Wallets | bool:
+    ) -> Union[Wallets, bool]:
+        """
+        Adds wallet data to the Wallets table
+        :param name_net: (str)
+        :param address: (str)
+        :param type_wallet: (TypesWallet)
+        :return: Union[Wallets, bool]
+        """
         if not await WalletAPI.select_wallets(Address=address):
             async with get_session() as session:
                 wallet_object: Wallets = Wallets(
@@ -35,11 +42,19 @@ class WalletAPI:
 
     @staticmethod
     async def select_wallets(
-        *args: str,
+        *args: (Union[Wallets, InstrumentedAttribute[Wallets]]),
         special_filter: tuple[bool] = None,
         mnemonic: bool = False,
         **kwargs: dict[str:Any],
     ) -> Union[Sequence[Wallets], Wallets]:
+        """
+        Returns data on the specified parameters from the Wallets table
+        :param args: (Union[Wallets, InstrumentedAttribute[Wallets]])
+        :param special_filter: (tuple[bool]) example - (Wallets.MnemonicId is not None,)
+        :param mnemonic: (bool) Do I need to get mnemonic
+        :param kwargs: (dict[str:Any]) Information about wallet
+        :return:
+        """
         async with get_session() as session:
             args = [Wallets] if not args else args
             sql: Select = select(*args).where(
@@ -61,6 +76,11 @@ class WalletAPI:
 
     @staticmethod
     async def delete_wallet(wallet_id: int) -> None:
+        """
+        Deletes a wallet by its ID
+        :param wallet_id: (int)
+        :return:
+        """
         async with get_session() as session:
             sql: Delete = delete(Wallets).where(Wallets.Id == wallet_id)
             try:
@@ -73,6 +93,12 @@ class WalletAPI:
 
     @staticmethod
     async def update_wallet(wallet_id: int, **kwargs) -> Wallets:
+        """
+        By the wallet id, updates it with the passed parameters
+        :param wallet_id: (int) wallet id
+        :param kwargs: (dict[str:Any]) Wallet Parameters
+        :return: Wallets
+        """
         async with get_session() as session:
             sql: Update = (
                 update(Wallets)

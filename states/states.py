@@ -15,6 +15,8 @@ class FSMFiatCrypto(StatesGroup):
 
 class FSMCryptoFiat(StatesGroup):
     check_validate_sum = State()
+    check_validate_mnemonic_sum = State()
+    money_sent_mnemonic = State()
     check_validate = State()
     currency_to = State()
     type_crypto = State()
@@ -27,6 +29,8 @@ class FSMCryptoFiat(StatesGroup):
 
 class FSMCryptoCrypto(StatesGroup):
     check_validate_sum = State()
+    check_validate_mnemonic_sum = State()
+    money_sent_mnemonic = State()
     check_validate = State()
     type_crypto = State()
     currency_to = State()

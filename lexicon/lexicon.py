@@ -274,6 +274,10 @@ errorLexicon: dict[str:str] = {
 ･ 💼 <b>Крипто-адрес рабочего кошелька</b> ⟶ <code>{adminAddress}</code>
 ･ 💶 <b>Баланс рабочего кошелька</b> ⟶ <code>{balance} {token}</code>
 ･ 💵 <b>Сумма для перевода</b> ⟶ <code>{amount} {token}</code>""",
+    "sentUser": """🔴 <b>ОШИБКА</b> 🔴
+<i>На кошелек не пришли средства или в нем не хватает полной суммы!</i>
+
+""",
 }
 
 startCallbackUser: dict[str:str] = {
@@ -416,9 +420,9 @@ revokeButton: dict[str:str] = {
 }
 
 changeStatus: dict[str:str] = {
-    "wait": "wait 🕜",
-    "accepted": "accepted 📝",
-    "completed": "completed 🏷️",
+    "wait": "WAIT 🕜",
+    "accepted": "ACCEPTED 📝",
+    "completed": "COMPLETED 🏷️",
 }
 
 sendFunds: dict[str:str] = {"sendFunds": "Отправить средства 💸"}

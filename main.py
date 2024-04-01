@@ -23,7 +23,9 @@ async def main() -> None:
 
     storge: RedisStorage = RedisStorage(redis=redis)
 
-    bot_properties: DefaultBotProperties = DefaultBotProperties(parse_mode=ParseMode.HTML)
+    bot_properties: DefaultBotProperties = DefaultBotProperties(
+        parse_mode=ParseMode.HTML
+    )
 
     bot: Bot = Bot(token=config.TelegramBot.TOKEN, default=bot_properties)
     dp: Dispatcher = Dispatcher(storage=storge, redis=redis)

@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -54,7 +52,7 @@ router: Router = Router()
 )
 async def save_type_fiat_transaction(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     state_data: dict[str:str] = await state.get_data()
     await StateService.set_states(
         state_name="method", state_data=state_data, state=state
@@ -90,7 +88,7 @@ async def save_type_fiat_transaction(
 )
 async def crypto_method(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await StateService.set_states(
         state_name="get_sum_crypto", state_data=await state.get_data(), state=state
     )

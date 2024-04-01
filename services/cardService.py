@@ -4,6 +4,11 @@ import re
 class CardCheck:
     @staticmethod
     def validate_luhn(card_number: str) -> bool:
+        """
+        Verifies the card number using Luna's algorithm
+        :param card_number: (str) Card number
+        :return:(bool)
+        """
         card_number = str(card_number)
         if not card_number.isdigit():
             return False
@@ -21,6 +26,11 @@ class CardCheck:
 
     @staticmethod
     async def preprocess_phone(phone: str) -> str:
+        """
+        Converts the phone number into a single format
+        :param phone: (str) phone number
+        :return: (str) phone number into a single format
+        """
         formatted_number = re.sub(r"[+\s\-()]", "", phone)
         if formatted_number.startswith("8") or formatted_number.startswith("7"):
             formatted_number = "+7" + formatted_number[1:]

@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -9,7 +7,7 @@ from factories.factory import AdminCallbackFactory
 from filters.filters import IsAdmin
 from keyboard.keyboard_factory import Factories
 from lexicon.lexicon import botMessages, backLexicon
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from states.states import FSMEditMinSum
 
 router: Router = Router()
@@ -18,7 +16,7 @@ router: Router = Router()
 @router.callback_query(AdminCallbackFactory.filter(F.page == "editMinSum"), IsAdmin())
 async def edit_min_sum(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.set_state(FSMEditMinSum.get_sum)
     await callback.message.edit_text(
         text=botMessages["editMinSum"],
@@ -35,7 +33,7 @@ async def edit_min_sum(
     IsAdmin(),
     StateFilter(FSMEditMinSum.check_sure),
 )
-async def update_min_sum(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def update_min_sum(callback: CallbackQuery, state: FSMContext) -> None:
     json_data = await JsonService.read_json()
     minSum = (await state.get_data())["minSum"]
     json_data["minSum"] = minSum

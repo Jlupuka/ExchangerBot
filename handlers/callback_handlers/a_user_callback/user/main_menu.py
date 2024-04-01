@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
@@ -20,7 +18,7 @@ router: Router = Router()
 )
 async def main_handler(
     callback: CallbackQuery, state: FSMContext, callback_data: UserCallbackFactory
-) -> NoReturn:
+) -> None:
     await state.clear()
     await callback.message.edit_text(
         text=botMessages["startMessageUser"],

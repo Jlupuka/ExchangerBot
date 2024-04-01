@@ -21,7 +21,7 @@ from lexicon.lexicon import (
 from services.cardService import CardCheck
 from services.cryptoService import CryptoCheck
 from services.cryptoWalletAPIService import CryptoWalletAPIService
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from services.walletService import WalletService
 from states.states import FSMAddWallet
 

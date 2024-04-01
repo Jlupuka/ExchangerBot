@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -25,7 +23,7 @@ async def settings_handler(
     callback_data: AdminCallbackFactory,
     state: FSMContext,
     user: Users,
-) -> NoReturn:
+) -> None:
     await state.clear()
     admin_work_type: bool = user.WorkType
     if callback_data.page == "workType":

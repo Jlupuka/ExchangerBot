@@ -12,6 +12,11 @@ from databaseAPI.models.models import MnemonicWallets
 class MnemonicAPI:
     @staticmethod
     async def add_mnemonic(**kwargs: dict[str:Any]) -> MnemonicWallets:
+        """
+        Adds wallet data to the mnemonics table
+        :param kwargs: (dict[str:Any]) Information about mnemonics
+        :return: MnemonicWallets
+        """
         async with get_session() as session:
             mnemonic_obj: MnemonicWallets = MnemonicWallets(**kwargs)
             session.add(mnemonic_obj)
@@ -28,6 +33,12 @@ class MnemonicAPI:
         *args: Union[MnemonicWallets, InstrumentedAttribute[MnemonicWallets]],
         **kwargs: dict[str:Any],
     ) -> Union[Sequence[MnemonicWallets], MnemonicWallets]:
+        """
+        Returns mnemonics from the table for the specified arguments
+        :param args: (Union[MnemonicWallets, InstrumentedAttribute[MnemonicWallets]])
+        :param kwargs: (dict[str:Any]) Information about mnemonics
+        :return: Union[Sequence[MnemonicWallets], MnemonicWallets]
+        """
         async with get_session() as session:
             sql: Select = (
                 select(*args)

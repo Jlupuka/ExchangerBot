@@ -1,6 +1,6 @@
 import math
 import re
-from typing import Coroutine, Any, Type
+from typing import Coroutine, Any, Type, Union
 
 import aiohttp
 
@@ -8,7 +8,7 @@ from CastomExceptions.castomException import (
     NotFoundCryptoToken,
     BadCryptoAddress,
 )
-from services.dataService import JsonService
+from services.JsonService import JsonService
 
 token_translate = {"XMR": "monero", "TRX": "tron"}
 
@@ -33,6 +33,13 @@ class CryptoCheck:
     async def currency_rate(
         currency_from: str, currency_to: str, margins: float = 1.05
     ) -> float:
+        """
+        Returns the currency rate
+        :param currency_from: (str) Name of currency to be transferred
+        :param currency_to: (str) Name of currency to be converted
+        :param margins: (float) Markup
+        :return: (float) Price
+        """
         if currency_to in {"XMR", "TRX"}:
             if currency_from in {"XMR", "TRX"}:
                 if currency_from == currency_to:
@@ -68,6 +75,12 @@ class CryptoCheck:
     async def get_currency_by_coingecko(
         currency_from: str = "monero", currency_to: str = "usd"
     ) -> float:
+        """
+        Returns the currency rate by coingecko
+        :param currency_from: (str) Name of currency to be transferred
+        :param currency_to: (str) Name of currency to be converted
+        :return: (float) Price
+        """
         async with aiohttp.ClientSession() as session:
             url = "https://api.coingecko.com/api/v3/simple/price"
             params = {"ids": currency_from, "vs_currencies": currency_to}
@@ -77,13 +90,11 @@ class CryptoCheck:
                 return float(currency_rate)
 
     @staticmethod
-    async def validate_crypto_address(
-        token: str, address: str
-    ) -> (
-        tuple[bool, Type[NotFoundCryptoToken]]
-        | tuple[bool, Type[BadCryptoAddress]]
-        | tuple[bool, None]
-    ):
+    async def validate_crypto_address(token: str, address: str) -> Union[
+        tuple[bool, Type[NotFoundCryptoToken]],
+        tuple[bool, Type[BadCryptoAddress]],
+        tuple[bool, None],
+    ]:
         """
         Checks if the token and crypto address are valid
         :param token: (str) crypto token
@@ -103,8 +114,15 @@ class CryptoCheck:
 
     @staticmethod
     async def minimal_summa(
-        minSum: int | float, currency_from: str, currency_to: str
+        minSum: Union[int, float], currency_from: str, currency_to: str
     ) -> float:
+        """
+        Converts the minimum exchange amount to the desired currency
+        :param minSum: (Union[int, float]) minimal amount
+        :param currency_from: (str) Name of currency to be transferred
+        :param currency_to: (str) Name of currency to be converted
+        :return: (float) Price
+        """
         if currency_from != "RUB":
             currency_rate = await CryptoCheck.currency_rate(
                 currency_from="RUB", currency_to=currency_from, margins=1
@@ -122,11 +140,19 @@ class CryptoCheck:
 
     @staticmethod
     async def transaction_amount(
-        amount: int | float,
+        amount: Union[int, float],
         currency_from: str,
         currency_to: str,
-        margins: float | int = 1,
+        margins: Union[float, int] = 1,
     ) -> float:
+        """
+        Returns the transfer amount in the desired currency
+        :param amount: (Union[int, float]) Transfer amount
+        :param currency_from: (str) Name of currency to be transferred
+        :param currency_to: (str) Name of currency to be converted
+        :param margins: (float) Markup
+        :return: (float) Price
+        """
         currency_rate = await CryptoCheck.currency_rate(
             currency_from=currency_to, currency_to=currency_from, margins=1
         )

@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -13,7 +11,7 @@ from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory
 
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from services.walletService import WalletService
 from states.states import FSMFiatCrypto
 
@@ -35,13 +33,13 @@ router: Router = Router()
 )
 async def method_FC(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     if callback_data.page != "repeatGetSum":
         await state.update_data(currency_from=callback_data.page.upper())
     state_data: dict[str:str] = await state.get_data()
     minimal_amount = await JsonService.get_specific_data(name_data="minSum")
     work_wallet: Wallets = await WalletService.random_wallet(
-        name_net=state_data["typeFiat"]
+        NameNet=state_data["typeFiat"], Status=True
     )
     if state_data["currency_from"] != "RUB":
         minimal_amount = await CryptoCheck.minimal_summa(
@@ -65,7 +63,9 @@ async def method_FC(
             min_sum=minimal_amount,
             currency_from=state_data["currency_from"],
             currency_to=state_data["currency_to"],
-            currency_rate=format(currency_rate, '.7f') if currency_rate < 1 else currency_rate,
+            currency_rate=(
+                format(currency_rate, ".7f") if currency_rate < 1 else currency_rate
+            ),
         ),
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory,

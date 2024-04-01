@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 
 from aiogram.types import CallbackQuery
@@ -29,7 +27,7 @@ router: Router = Router()
 )
 async def choice_rub_crypto(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.clear()
     typeWallet = callback_data.page.split("-")[1]
     await state.update_data(typeTransaction=callback_data.page.upper())

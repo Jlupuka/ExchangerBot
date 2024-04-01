@@ -5,7 +5,9 @@ from states.states import FSMCryptoCrypto, FSMCryptoFiat, FSMFiatCrypto
 
 class StateService:
     @staticmethod
-    async def set_states(state_name: str, state_data: dict[str:str], state: FSMContext) -> None:
+    async def set_states(
+        state_name: str, state_data: dict[str:str], state: FSMContext
+    ) -> None:
         """
         A function that sets the state for a particular FSM
         :param state_name: (str) Name of the state to switch to

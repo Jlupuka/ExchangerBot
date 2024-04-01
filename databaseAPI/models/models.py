@@ -7,17 +7,17 @@ from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from databaseAPI.database import Base
 
-intpka = Annotated[int, mapped_column(primary_key=True, autoincrement=True)]
-created_at = Annotated[
+INTPKA = Annotated[int, mapped_column(primary_key=True, autoincrement=True)]
+CREATED_AT = Annotated[
     datetime.datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))
 ]
-update_at = Annotated[
+UPDATE_AT = Annotated[
     datetime.datetime,
     mapped_column(
         server_default=text("TIMEZONE('utc', now())"), onupdate=datetime.datetime.utcnow
     ),
 ]
-boolf = Annotated[bool, mapped_column(default=False)]
+BOOLF = Annotated[bool, mapped_column(default=False)]
 
 
 class Statuses(enum.Enum):
@@ -40,7 +40,7 @@ class TypesWallet(enum.Enum):
 class Submissions(Base):
     __tablename__ = "submissions"
 
-    Id: Mapped[intpka]
+    Id: Mapped[INTPKA]
     UserId: Mapped[int] = mapped_column(ForeignKey("users.Id"), nullable=False)
     WalletId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), nullable=False)
     AmountTo: Mapped[float]
@@ -50,8 +50,8 @@ class Submissions(Base):
     AddressUser: Mapped[str]
     Status: Mapped[Statuses] = mapped_column(default=Statuses.wait)
     AdminId: Mapped[Optional[int]] = mapped_column(ForeignKey("users.Id"), default=None)
-    created_at: Mapped[created_at]
-    update_at: Mapped[update_at]
+    created_at: Mapped[CREATED_AT]
+    update_at: Mapped[UPDATE_AT]
 
     wallet: Mapped["Wallets"] = relationship(
         foreign_keys=[WalletId],
@@ -74,12 +74,12 @@ class Submissions(Base):
 class Users(Base):
     __tablename__ = "users"
 
-    Id: Mapped[intpka]
+    Id: Mapped[INTPKA]
     UserId: Mapped[int] = mapped_column(BigInteger, unique=True)
-    Admin: Mapped[boolf]
-    WorkType: Mapped[boolf]
-    KYC: Mapped[boolf]
-    created_at: Mapped[created_at]
+    Admin: Mapped[BOOLF]
+    WorkType: Mapped[BOOLF]
+    KYC: Mapped[BOOLF]
+    created_at: Mapped[CREATED_AT]
 
     admin_submissions: Mapped[Optional[List["Submissions"]]] = relationship(
         back_populates="admin", foreign_keys=[Submissions.AdminId]
@@ -92,7 +92,7 @@ class Users(Base):
 class Wallets(Base):
     __tablename__ = "wallets"
 
-    Id: Mapped[intpka]
+    Id: Mapped[INTPKA]
     NameNet: Mapped[str]
     Address: Mapped[str] = mapped_column(unique=True, nullable=False)
     Status: Mapped[bool] = mapped_column(default=True)
@@ -108,7 +108,7 @@ class Wallets(Base):
 class MnemonicWallets(Base):
     __tablename__ = "mnemonic"
 
-    Id: Mapped[intpka]
+    Id: Mapped[INTPKA]
     WalletId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), unique=True)
     EncryptMnemonic: Mapped[str]
 

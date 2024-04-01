@@ -1,10 +1,12 @@
-from typing import NoReturn
+from typing import Union
 
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+from config.config import load_config
+from dataTemplates.data_templates import WalletTRX
 from databaseAPI.models import Wallets
 from filters.filters import IsToken
 from lexicon.lexicon import botMessages, backLexicon, minSum
@@ -13,7 +15,8 @@ from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory
 
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.cryptoWalletAPIService import CryptoWalletAPIService
+from services.JsonService import JsonService
 from services.stateService import StateService
 from services.walletService import WalletService
 from states.states import FSMCryptoFiat, FSMCryptoCrypto
@@ -44,12 +47,12 @@ router: Router = Router()
 )
 async def method_CC_CF(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     if callback_data.page != "repeatGetSum":
         await state.update_data(currency_from=callback_data.page.upper())
     state_data: dict[str:str] = await state.get_data()
     work_wallet: Wallets = await WalletService.random_wallet(
-        name_net=state_data["typeCrypto"]
+        NameNet=state_data["typeCrypto"], Status=True
     )
     if state_data["currency_to"] == "СПБ":
         state_data["currency_to"] = "RUB"
@@ -66,11 +69,36 @@ async def method_CC_CF(
         margins=work_wallet.Percent,
     )
     await state.update_data(
-        work_walletRequisites=work_wallet.Address,
         walletPercent=work_wallet.Percent,
-        walletId=work_wallet.Id,
         WalletCurrency=work_wallet.NameNet,
+        walletId=work_wallet.Id,
     )
+    if not work_wallet.MnemonicId:
+        await state.update_data(
+            work_walletRequisites=work_wallet.Address,
+        )
+    else:
+        mnemonic: str = await WalletService.decrypt_private_key(
+            encrypted_private_key=work_wallet.mnemonic.EncryptMnemonic,
+            secret_key=load_config().SecretKey.SECRETKEY,
+        )
+        client_obj = await CryptoWalletAPIService.get_crypto_attr(
+            token=work_wallet.NameNet,
+            module_name="client",
+            attr_name="Client",
+        )
+        client = await client_obj().client
+        create_wallet_obj = await CryptoWalletAPIService.get_crypto_attr(
+            token=work_wallet.NameNet,
+            module_name="create_wallet",
+            attr_name=work_wallet.NameNet,
+        )
+        wallet_data: Union[WalletTRX] = await create_wallet_obj(
+            private_key=mnemonic, client=client
+        ).generate_wallet()
+        await state.update_data(
+            WalletData=wallet_data.__dict__, mainWalletAddress=work_wallet.Address
+        )
     commission = await JsonService.get_specific_data(name_data="commissionSum")
     commission_amount: float = await CryptoCheck.transaction_amount(
         amount=commission,
@@ -83,7 +111,9 @@ async def method_CC_CF(
             min_sum=minimal_amount,
             currency_from=state_data["currency_from"],
             currency_to=state_data["typeCrypto"],
-            currency_rate=format(currency_rate, '.7f') if currency_rate < 1 else currency_rate,
+            currency_rate=(
+                format(currency_rate, ".7f") if currency_rate < 1 else currency_rate
+            ),
             commission=commission_amount,
         ),
         reply_markup=await Factories.create_fac_menu(
@@ -95,5 +125,7 @@ async def method_CC_CF(
         ),
     )
     await StateService.set_states(
-        "get_sum", state_data=await state.get_data(), state=state
+        state_name="get_sum",
+        state_data=await state.get_data(),
+        state=state,
     )

@@ -1,4 +1,4 @@
-from typing import NoReturn, Union, Any, Sequence
+from typing import Union, Any, Sequence
 
 from aiogram import Router, Bot, exceptions
 from aiogram import F
@@ -44,7 +44,7 @@ async def mission_data(
     callback_data: MissionCallbackFactory,
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     await state.clear()
     await callback.message.delete()
     sendMission_copy: dict[str:str] = sendMission.copy()
@@ -119,7 +119,7 @@ async def get_missions_type(
     callback_data: Union[AdminCallbackFactory, MissionCallbackFactory],
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
@@ -147,7 +147,7 @@ async def missions_return(
     callback_data: AdminCallbackFactory,
     state: FSMContext,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)

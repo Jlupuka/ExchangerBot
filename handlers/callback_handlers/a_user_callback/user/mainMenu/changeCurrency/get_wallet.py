@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -28,7 +26,7 @@ router: Router = Router()
 )
 async def get_wallet(
     callback: CallbackQuery, callback_data: UserCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.update_data(currency_to=callback_data.page.upper())
     state_data: dict[str:str] = await state.get_data()
     await StateService.set_states(
@@ -53,7 +51,7 @@ async def get_wallet(
         FSMCryptoCrypto.check_validate,
     ),
 )
-async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def repeat_get_wallet(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str:str] = await state.get_data()
     typeTransaction = state_data["typeTransaction"].split("-")[1]
     await StateService.set_states(

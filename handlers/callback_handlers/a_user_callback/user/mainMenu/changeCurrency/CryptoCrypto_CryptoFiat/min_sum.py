@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -11,7 +9,7 @@ from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory
 
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from services.stateService import StateService
 from states.states import FSMCryptoFiat, FSMCryptoCrypto
 
@@ -22,12 +20,10 @@ router: Router = Router()
     UserCallbackFactory.filter(F.page == "minSum"),
     StateFilter(FSMCryptoFiat.get_sum, FSMCryptoCrypto.get_sum),
 )
-async def set_minimal_amount_CC_CF(
-    callback: CallbackQuery, state: FSMContext
-) -> NoReturn:
+async def set_minimal_amount_CC_CF(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str:str] = await state.get_data()
     walletPercent = state_data["walletPercent"]
-    if state_data["currency_to"] == "СПБ":
+    if state_data["currency_to"] == "СБП":
         state_data["currency_to"] = "RUB"
     commission = await JsonService.get_specific_data(name_data="commissionSum")
     commission_amount: float = await CryptoCheck.transaction_amount(
@@ -70,5 +66,11 @@ async def set_minimal_amount_CC_CF(
         ),
     )
     await StateService.set_states(
-        state_name="check_validate_sum", state_data=state_data, state=state
+        state_name=(
+            "check_validate_sum"
+            if not state_data.get("WalletData")
+            else "check_validate_mnemonic_sum"
+        ),
+        state_data=state_data,
+        state=state,
     )

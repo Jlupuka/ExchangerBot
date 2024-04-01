@@ -1,5 +1,5 @@
 from aiogram.filters.callback_data import CallbackData
-from typing import Optional
+from typing import Optional, Union
 
 
 class UserCallbackFactory(CallbackData, prefix="user"):
@@ -16,8 +16,8 @@ class AdminCallbackFactory(CallbackData, prefix="admin"):
 
 class MissionCallbackFactory(CallbackData, prefix="mission"):
     mission_id: int
-    page: str | int
-    back_page: Optional[str | int]
+    page: Union[str, int]
+    back_page: Optional[Union[str, int]]
 
 
 class KYCCallbackFactory(CallbackData, prefix="KYC"):

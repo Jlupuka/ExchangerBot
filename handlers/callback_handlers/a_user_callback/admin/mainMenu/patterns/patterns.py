@@ -1,4 +1,4 @@
-from typing import NoReturn, Any
+from typing import Any
 
 from aiogram import Router
 from aiogram import F
@@ -17,7 +17,7 @@ from lexicon.lexicon import (
 from keyboard.keyboard_factory import Factories
 from factories.factory import AdminCallbackFactory
 
-from services.dataService import JsonService
+from services.JsonService import JsonService
 
 from services.walletService import WalletService
 from states.states import FSMEditPatterns
@@ -28,7 +28,7 @@ router: Router = Router()
 @router.callback_query(AdminCallbackFactory.filter(F.page == "editPatterns"), IsAdmin())
 async def choice_patterns(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.set_state(FSMEditPatterns.choice_pattern)
     work_patterns = await JsonService.preprocess_patterns_for_button()
     patterns_text = await JsonService.preprocess_patterns_for_text()
@@ -50,7 +50,7 @@ async def choice_patterns(
 
 
 @router.callback_query(AdminCallbackFactory.filter(F.page == "addPattern"), IsAdmin())
-async def add_pattern(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def add_pattern(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(FSMEditPatterns.get_token_name)
     await callback.message.edit_text(
         text=botMessages["getTokenPattern"],
@@ -67,7 +67,7 @@ async def add_pattern(callback: CallbackQuery, state: FSMContext) -> NoReturn:
     IsAdmin(),
     StateFilter(FSMEditPatterns.check_sure),
 )
-async def patterns(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def patterns(callback: CallbackQuery, state: FSMContext) -> None:
     state_data = await state.get_data()
     work_patterns = await JsonService.get_specific_data(name_data="patterns")
     if state_data["token"] not in work_patterns:
@@ -106,7 +106,7 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> NoReturn:
 )
 async def verification_delete(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+) -> None:
     await state.update_data(patterns=callback_data.page)
     await callback.message.edit_text(
         text=botMessages["verificationDeletePattern"].format(
@@ -123,9 +123,7 @@ async def verification_delete(
     IsAdmin(),
     StateFilter(FSMEditPatterns.choice_pattern),
 )
-async def delete_pattern(
-    callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
-) -> NoReturn:
+async def delete_pattern(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str, Any] = await state.get_data()
     work_patterns = await JsonService.get_specific_data(name_data="patterns")
     token_delete = work_patterns.pop(state_data["patterns"])

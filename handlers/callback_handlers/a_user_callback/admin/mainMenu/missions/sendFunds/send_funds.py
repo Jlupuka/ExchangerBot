@@ -1,5 +1,4 @@
 import json
-import random
 from typing import Any
 
 from aiogram import Router, F, Bot
@@ -14,7 +13,6 @@ from lexicon.lexicon import botMessages, send
 from config.config import load_config
 from dataTemplates.data_templates import MnemonicData, SendData
 from databaseAPI.commands.submissions_commands import SubmissionsAPI
-from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets, Submissions
 from factories.factory import MissionCallbackFactory
 from filters.filters import CheckSendFunds, IsAdmin
@@ -47,12 +45,10 @@ async def send_funds_handler(
             Id=callback_data.mission_id,
         )
     )[0]
-    wallet: Wallets = random.choice(
-        await WalletAPI.select_wallets(
-            special_filter=(Wallets.MnemonicId is not None,),
-            mnemonic=True,
-            NameNet=mission_obj.CurrencyTo,
-        )
+    wallet: Wallets = await WalletService.random_wallet(
+        special_filter=(Wallets.MnemonicId is not None,),
+        mnemonic=True,
+        NameNet=mission_obj.CurrencyTo,
     )
     match data := (await redis.get(f"mnemonic:{wallet.mnemonic.Id}")):
         case None:
@@ -64,7 +60,7 @@ async def send_funds_handler(
                 token=mission_obj.CurrencyTo, private_key=mnemonic
             )
             address: str = crypto_api.address
-            balance: float = await crypto_api.get_balance()
+            balance: float = await crypto_api.balance
             data = {
                 "address": address,
                 "balance": balance,

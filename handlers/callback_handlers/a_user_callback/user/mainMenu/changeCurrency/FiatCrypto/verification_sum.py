@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -21,9 +19,7 @@ router: Router = Router()
     UserCallbackFactory.filter(F.page == "getSum"),
     StateFilter(FSMFiatCrypto.check_validate_sum),
 )
-async def receipt_verification_FC(
-    callback: CallbackQuery, state: FSMContext
-) -> NoReturn:
+async def receipt_verification_FC(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(FSMFiatCrypto.money_sent)
     state_data: dict[str:str] = await state.get_data()
     rub_amount_from = await CryptoCheck.transaction_amount(

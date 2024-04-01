@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import pathlib
+from typing import Union
 
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
@@ -14,14 +15,14 @@ from CastomExceptions.castomException import NotFoundCryptoToken
 class QRCodeService:
     @staticmethod
     async def create_crypto_payment_qrcode(
-        crypto_currency: str, amount: float, address: str, description: str | int = None
+        crypto_currency: str, amount: float, address: str, description: Union[str, int] = None
     ) -> str:
         """
         Creates qr code for cryptocurrency payment
         :param crypto_currency: (str) Cryptocurrency token
         :param amount: (float) Number of funds to be transferred
         :param address: (str) Cryptocurrency wallet address
-        :param description: (str | int | None) Translation description
+        :param description: (Union[str, int, None]) Translation description
         :return: (str) Path where the qr code was saved
         """
         match crypto_currency:
@@ -30,13 +31,17 @@ class QRCodeService:
             case "ETH":
                 payment_link = f"ethereum:{address}?value={amount}"
             case "XMR":
-                payment_link = f"monero:{address}?tx_amount={amount}&tx_description={description}"
+                payment_link = (
+                    f"monero:{address}?tx_amount={amount}&tx_description={description}"
+                )
             case "TRX":
                 payment_link = f"tron:{address}?amount={amount}"
             case "DOGE":
                 payment_link = f"doge:{address}?amount={amount}"
             case _:
-                raise NotFoundCryptoToken(f"The network {crypto_currency} is not in the system")
+                raise NotFoundCryptoToken(
+                    f"The network {crypto_currency} is not in the system"
+                )
         qr: QRCode = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -59,7 +64,7 @@ class QRCodeService:
         """
         Deletes a file by its name
         :param file_name: (str) file name
-        :return: None
+        :return:
         """
         file_path = pathlib.Path(file_name)
         if file_path.exists() and file_path.is_file():
@@ -70,7 +75,7 @@ class QRCodeService:
         """
         Creates a folder based on the input name
         :param directory_name: (str) directory name
-        :return: None
+        :return:
         """
         directory_path = pathlib.Path(directory_name)
         if not directory_path.exists():

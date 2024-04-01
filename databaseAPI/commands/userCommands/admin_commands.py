@@ -1,5 +1,5 @@
 from services import logger
-from typing import Sequence
+from typing import Sequence, Union
 
 from databaseAPI.commands.userCommands.user_commands import UserAPI
 
@@ -14,8 +14,8 @@ class AdminAPI(UserAPI):
     async def check_admin(user_id: int, check_admin: bool) -> bool:
         """
         Checking the user for an admin
-        :param check_admin: bool
-        :param user_id: int
+        :param check_admin: (bool)
+        :param user_id: (int)
         :return: bool
         """
         user: Users = (await UserAPI.select_user(UserId=user_id))[0]
@@ -25,8 +25,8 @@ class AdminAPI(UserAPI):
     async def make_admin(user_id: int) -> Users:
         """
         Changes a user's privilege to administrator
-        :param user_id: int
-        :return: None
+        :param user_id: (int) user id
+        :return: Users
         """
         async with get_session() as session:
             try:
@@ -37,10 +37,16 @@ class AdminAPI(UserAPI):
 
     @staticmethod
     async def count_adminsWork() -> int:
+        """
+        :return: (int) Count work admins
+        """
         admins: list[Users] | int = await AdminAPI.select_work_admins()
         return len(admins) if isinstance(admins, list) else 0
 
     @staticmethod
-    async def select_work_admins() -> list[Users] | int:
+    async def select_work_admins() -> Union[Sequence[Users], int]:
+        """
+        :return: Returns all admins with the  WorkType=True
+        """
         admins: Sequence[Users] = await UserAPI.select_user(Admin=True, WorkType=True)
         return admins if admins else 0

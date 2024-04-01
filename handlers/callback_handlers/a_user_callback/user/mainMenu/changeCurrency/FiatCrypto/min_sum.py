@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery
@@ -11,7 +9,7 @@ from keyboard.keyboard_factory import Factories
 from factories.factory import UserCallbackFactory
 
 from services.cryptoService import CryptoCheck
-from services.dataService import JsonService
+from services.JsonService import JsonService
 from states.states import FSMFiatCrypto
 
 router: Router = Router()
@@ -20,7 +18,7 @@ router: Router = Router()
 @router.callback_query(
     UserCallbackFactory.filter(F.page == "minSum"), StateFilter(FSMFiatCrypto.get_sum)
 )
-async def set_minimal_amount_FC(callback: CallbackQuery, state: FSMContext) -> NoReturn:
+async def set_minimal_amount_FC(callback: CallbackQuery, state: FSMContext) -> None:
     state_data: dict[str:str] = await state.get_data()
     minimal_amount = await JsonService.get_specific_data(name_data="minSum")
     if state_data["currency_from"] != "RUB":

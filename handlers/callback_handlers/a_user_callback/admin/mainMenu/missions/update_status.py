@@ -1,7 +1,5 @@
-from typing import NoReturn
-
-from aiogram import Router, Bot
 from aiogram import F
+from aiogram import Router, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
@@ -37,7 +35,7 @@ async def get_missions(
     state: FSMContext,
     user: Users,
     bot: Bot,
-) -> NoReturn:
+) -> None:
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
