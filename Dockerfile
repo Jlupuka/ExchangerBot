@@ -13,4 +13,4 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 COPY . /bot
-CMD ["python", "/bot/main.py"]
+CMD ["python", "-m", "/bot/main"]
