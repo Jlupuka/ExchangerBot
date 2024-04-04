@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import json
 from typing import Any, Union
@@ -122,6 +123,8 @@ class JsonService:
         """
         for filename in glob.glob(os.path.join(__basedir__, "copy_*.json")):
             new_filename = filename.replace(f"{__basedir__}copy_", "")
-            if not os.path.isfile(filename):
-                copy_any_data = await JsonService.read_json(filename=new_filename)
+            if not os.path.isfile(f"{__basedir__}{new_filename}"):
+                copy_any_data = await JsonService.read_json(
+                    filename=filename.replace(__basedir__, "")
+                )
                 await JsonService.save_json(data=copy_any_data, filename=new_filename)
