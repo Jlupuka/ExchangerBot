@@ -177,5 +177,7 @@ class SubmissionsAPI:
             for key, query in queries.items():
                 result: ChunkedIteratorResult = await session.execute(query)
                 results[key] = result.scalar()
-            results["topTypeExchange"] = results["topTypeExchange"].value
+            results["topTypeExchange"] = (
+                results["topTypeExchange"].value if results["topTypeExchange"] else None
+            )
             return results
