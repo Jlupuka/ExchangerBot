@@ -21,9 +21,9 @@ class LoadService:
         """
 
         def custom_sort(line: str) -> int:
-            if "admin" in line:
+            if "admin" in line and "error" not in line:
                 return 0
-            elif "user" in line:
+            elif "user" in line and "error" not in line:
                 return 1
             elif "error" in line:
                 return 2
@@ -37,10 +37,7 @@ class LoadService:
                 glob(join(handlers_dir, "**", "*.py"), recursive=True),
             )
         ]
-        modules.sort(
-            key=custom_sort,
-            reverse=True,
-        )
+        modules.sort(key=custom_sort)
         for index, module in enumerate(modules, start=1):
             module_name = import_module(module)
             if hasattr(module_name, "router"):
