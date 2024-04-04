@@ -1,6 +1,6 @@
 FROM python:3.11-slim-bullseye
 RUN python -m venv /opt/venv
-ENV PATH="opt/venv/bin:$PATH"
+ENV PATH="venv/bin:$PATH"
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r requirements.txt
@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 FROM python:3.11-slim-bullseye as run-image
 COPY --from=compile-image /opt/venv /opt/venv
-ENV PATH="opt/venv/bin:$PATH"
+ENV PATH="venv/bin:$PATH"
 WORKDIR /app
 COPY . /bot
 CMD ["python", "-m", "main"]
