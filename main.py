@@ -13,6 +13,7 @@ from config.mainCommands import load_main_command
 from databaseAPI.database import create_base
 from databaseAPI.models import Submissions, Users, Wallets
 from services import logger
+from services.JsonService import JsonService
 from services.service import LoadService
 
 
@@ -31,6 +32,8 @@ async def main() -> None:
     dp: Dispatcher = Dispatcher(storage=storge, redis=redis)
 
     await create_base()
+
+    await JsonService.load_copy_json()
 
     await load_main_command(logger=logger, bot=bot)
 

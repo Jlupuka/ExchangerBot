@@ -1,6 +1,8 @@
+import glob
 import json
 from typing import Any, Union
 
+import os
 import aiofiles
 
 from dataTemplates.data_templates import WalletTRX
@@ -111,3 +113,15 @@ class JsonService:
         token_data.append({**wallet_data.__dict__})
         wallets_data[token] = token_data
         await JsonService.save_json(data=wallets_data, filename="workWalletsData.json")
+
+    @staticmethod
+    async def load_copy_json() -> None:
+        """
+        Loads all "copy_*.json" in non-copy and saves in src/data/ directory
+        :return: None
+        """
+        for filename in glob.glob(os.path.join(__basedir__, "copy_*.json")):
+            new_filename = filename.replace("copy_", "")
+            if not os.path.isfile(f"{__basedir__}{new_filename}"):
+                copy_any_data = await JsonService.read_json(filename=filename)
+                await JsonService.save_json(data=copy_any_data, filename=new_filename)
