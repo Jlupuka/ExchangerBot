@@ -11,4 +11,4 @@ COPY --from=compile-image /opt/venv /opt/venv
 ENV PATH="opt/venv/bin:$PATH"
 WORKDIR /app
 COPY . /bot
-CMD ["python", "-m", "main"]
+CMD ["python", "/bot/main.py"]
