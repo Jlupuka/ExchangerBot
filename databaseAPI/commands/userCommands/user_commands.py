@@ -23,7 +23,6 @@ class UserAPI:
         """
         async with get_session() as session:
             admin_flag = user_id in config.AdminId.ADMINID
-            logger.info(f'{config.AdminId.ADMINID} -- {user_id} -- {admin_flag} -- {config}')
             user_object: Users = Users(
                 UserId=user_id, Admin=admin_flag, KYC=True if admin_flag else False
             )
