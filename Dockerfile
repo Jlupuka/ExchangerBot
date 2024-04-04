@@ -12,6 +12,5 @@ ENV PATH="opt/venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
-COPY . /bot
-WORKDIR /bot
-CMD ["python", "-m", "main"]
+COPY . app/bot
+CMD ["python", "-m", "bot"]
