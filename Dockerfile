@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 
 FROM python:3.11-slim-bullseye as run-image
-COPY --from=compile-image /opt/venv /opt/venv
+COPY --from=compile-image /venv /venv
 ENV PATH="venv/bin:$PATH"
 WORKDIR /app
 COPY . /bot
