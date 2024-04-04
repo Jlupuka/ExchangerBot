@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  bot:
+    image: "jlupuka/exchanger-bot-docker-push:latest"
+    restart: "unless-stopped"
+    env_file:
+      - .env
+    depends_on:
+      - "postgres-db"
+      - "redis"
+      - pgadmin
+
+  redis:
+    image: "redis:latest"
+    restart: "unless-stopped"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+
+  postgres-db:
+    image: "postgres:latest"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    volumes:
+      - .postgres:/var/lib/postgres/data
+    restart: always
+
+  pgadmin:
+    container_name: pgadmin
+    image: "dpage/pgadmin4"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: noemail@noemail.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5000:80"
