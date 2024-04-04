@@ -121,7 +121,7 @@ class JsonService:
         :return: None
         """
         for filename in glob.glob(os.path.join(__basedir__, "copy_*.json")):
-            new_filename = filename.replace("copy_", "")
-            if not os.path.isfile(f"{__basedir__}{new_filename}"):
-                copy_any_data = await JsonService.read_json(filename=filename)
+            new_filename = filename.replace(f"{__basedir__}copy_", "")
+            if not os.path.isfile(filename):
+                copy_any_data = await JsonService.read_json(filename=new_filename)
                 await JsonService.save_json(data=copy_any_data, filename=new_filename)
