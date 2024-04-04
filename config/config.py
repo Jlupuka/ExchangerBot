@@ -60,11 +60,11 @@ def load_config(path: Union[str, None] = None) -> Config:
     return Config(
         TelegramBot=TokenBot(TOKEN=env("BOT-TOKEN")),
         DataBase=PostgreSQL(
-            USER=env("DB-USER"),
-            PASSWORD=env("DB-PASSWORD"),
-            HOST=env("DB-HOST"),
-            PORT=env("DB-PORT"),
-            NAME=env("DB-NAME"),
+            USER=env("POSTGRES_USER"),
+            PASSWORD=env("POSTGRES_PASSWORD"),
+            HOST=env("POSTGRES_HOST"),
+            PORT=env("POSTGRES_PORT"),
+            NAME=env("POSTGRES_DB"),
         ),
         Redis=RedisStorge(HOST=env("REDIS-HOST"), PORT=env("REDIS-PORT")),
         AdminId=Admins(
