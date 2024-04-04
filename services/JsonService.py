@@ -22,7 +22,7 @@ class JsonService:
         :return:
         """
         async with aiofiles.open(
-            f"{__basedir__}/{filename}", mode="w", encoding="utf-8"
+            f"{__basedir__}{filename}", mode="w", encoding="utf-8"
         ) as f:
             await f.write(json.dumps(data, indent=4, ensure_ascii=False))
 
@@ -34,7 +34,7 @@ class JsonService:
         :return: (dict[str:Any])
         """
         async with aiofiles.open(
-            f"{__basedir__}/{filename}", mode="r", encoding="utf-8"
+            f"{__basedir__}{filename}", mode="r", encoding="utf-8"
         ) as f:
             return json.loads(await f.read())
 
