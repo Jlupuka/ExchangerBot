@@ -19,6 +19,17 @@ class LoadService:
             None
 
         """
+
+        def custom_sort(line: str) -> int:
+            if "admin" in line:
+                return 0
+            elif "user" in line:
+                return 1
+            elif "error" in line:
+                return 2
+            else:
+                return 3
+
         modules = [
             module.replace("/", ".").replace(".py", "")
             for module in map(
@@ -27,10 +38,7 @@ class LoadService:
             )
         ]
         modules.sort(
-            key=lambda module: len(module)
-            and "admin" in module
-            and "user" in module
-            and ("error" not in module or "other" not in module),
+            key=custom_sort,
             reverse=True,
         )
         for index, module in enumerate(modules, start=1):
