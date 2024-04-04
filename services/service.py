@@ -29,6 +29,7 @@ class LoadService:
         modules.sort(
             key=lambda module: len(module)
             and "admin" in module
+            and "user" in module
             and ("error" not in module or "other" not in module),
             reverse=True,
         )
