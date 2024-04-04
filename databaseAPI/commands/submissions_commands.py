@@ -128,7 +128,9 @@ class SubmissionsAPI:
         async with get_session() as session:
             now = func.now()
             queries = {
-                "newUserToDay": select(func.count()).where(Users.created_at == now),
+                "newUserToDay": select(func.count()).where(
+                    Users.created_at >= now - timedelta(days=1)
+                ),
                 "newUserToWeek": select(func.count()).where(
                     Users.created_at >= now - timedelta(weeks=1)
                 ),
