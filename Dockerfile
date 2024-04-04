@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 FROM python:3.11-slim-bullseye as run-image
 COPY --from=compile-image /opt/venv /opt/venv
 ENV PATH="opt/venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 COPY . /bot
 CMD ["python", "/bot/main.py"]
