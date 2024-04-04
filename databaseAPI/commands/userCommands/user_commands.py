@@ -82,7 +82,9 @@ class UserAPI:
         :param user_id: (int) User id
         :return: Users
         """
-        user: Users = (await UserAPI.select_user(UserId=user_id))[0]
+        user: Union[Sequence[Users], None] = (
+            user[0] if (user := (await UserAPI.select_user(UserId=user_id))) else user
+        )
         if not user:
             user: Users = await UserAPI.__add_user(user_id=user_id)
         return user
