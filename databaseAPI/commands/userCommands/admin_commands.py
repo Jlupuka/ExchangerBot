@@ -19,7 +19,7 @@ class AdminAPI(UserAPI):
         :return: bool
         """
         user: Users = (await UserAPI.select_user(UserId=user_id))[0]
-        return user.Admin if check_admin is False else user.Admin and user.WorkType
+        return user.IsAdmin if check_admin is False else user.IsAdmin and user.StatusWork
 
     @staticmethod
     async def make_admin(user_id: int) -> Users:
@@ -46,7 +46,7 @@ class AdminAPI(UserAPI):
     @staticmethod
     async def select_work_admins() -> Union[Sequence[Users], int]:
         """
-        :return: Returns all admins with the  WorkType=True
+        :return: Returns all admins with the  StatusWork=True
         """
         admins: Sequence[Users] = await UserAPI.select_user(Admin=True, WorkType=True)
         return admins if admins else 0

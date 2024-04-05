@@ -13,9 +13,9 @@ class UserService:
     @staticmethod
     async def random_admin() -> Union[Users, None]:
         """
-        :return: (Union[Users, None]) A random administrator with a WorkType=True
+        :return: (Union[Users, None]) A random administrator with a StatusWork=True
         """
-        all_work_admins: list[Users] = await AdminAPI.select_work_admins()
+        all_work_admins: Sequence[Users] = await AdminAPI.select_work_admins()
         return random.choice(all_work_admins) if all_work_admins else None
 
     @staticmethod

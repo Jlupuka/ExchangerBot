@@ -13,11 +13,11 @@ from lexicon.lexicon import botMessages, startCallbackUser
 router: Router = Router()
 
 
-@router.message(Command(commands=["start", "cancel"]))
+@router.message(Command(commands=["start", "cancel", "help"]))
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
-        text=botMessages["startMessageAdmin"],
+        text=botMessages["startMessageUser"],
         reply_markup=await Factories.create_fac_menu(
             UserCallbackFactory, back_page="main", sizes=(2, 1, 2), **startCallbackUser
         ),

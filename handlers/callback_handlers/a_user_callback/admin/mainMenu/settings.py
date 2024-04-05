@@ -25,13 +25,13 @@ async def settings_handler(
     user: Users,
 ) -> None:
     await state.clear()
-    admin_work_type: bool = user.WorkType
+    admin_work_type: bool = user.StatusWork
     if callback_data.page == "workType":
         admin_work_type: bool = (
             await AdminAPI.update_user(
                 user_id=callback.from_user.id, WorkType=not admin_work_type
             )
-        ).WorkType
+        ).StatusWork
     count_wait_missions: int = len(
         await SubmissionsAPI.select_missions(
             False, None, 0, *(Submissions,), Status=Statuses.wait

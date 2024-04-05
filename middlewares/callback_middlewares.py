@@ -30,5 +30,5 @@ class DataBaseCheckUserMiddleware(BaseMiddleware):
                 ),
             )
         data["user"] = user_obj
-        await state.update_data(userIsAdmin=user_obj.Admin)
+        await state.update_data(userIsAdmin=user_obj.IsAdmin)
         return await handler(event, data)

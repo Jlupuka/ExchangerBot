@@ -19,5 +19,5 @@ class DataBaseCheckUserMiddleware(BaseMiddleware):
     ) -> Any:
         user_obj: Users = await UserAPI.check_user(event.from_user.id)
         state: FSMContext = data["state"]
-        await state.update_data(userIsAdmin=user_obj.Admin)
+        await state.update_data(userIsAdmin=user_obj.IsAdmin)
         return await handler(event, data)

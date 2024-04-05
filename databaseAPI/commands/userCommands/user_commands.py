@@ -24,7 +24,7 @@ class UserAPI:
         async with get_session() as session:
             admin_flag = user_id in config.AdminId.ADMINID
             user_object: Users = Users(
-                UserId=user_id, Admin=admin_flag, KYC=True if admin_flag else False
+                UserId=user_id, IsAdmin=admin_flag, KYC=True if admin_flag else False
             )
             session.add(user_object)
             try:

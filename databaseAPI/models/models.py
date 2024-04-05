@@ -76,8 +76,8 @@ class Users(Base):
 
     Id: Mapped[INTPKA]
     UserId: Mapped[int] = mapped_column(BigInteger, unique=True)
-    Admin: Mapped[BOOLF]
-    WorkType: Mapped[BOOLF]
+    IsAdmin: Mapped[BOOLF]
+    StatusWork: Mapped[BOOLF]
     KYC: Mapped[BOOLF]
     created_at: Mapped[CREATED_AT]
 
