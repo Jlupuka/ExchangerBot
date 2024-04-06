@@ -4,7 +4,7 @@ services:
     image: "jlupuka/exchanger-bot-docker-push:latest"
     restart: "unless-stopped"
     env_file:
-      -.env
+      - .env
     depends_on:
       - "postgres-db"
       - "redis"
