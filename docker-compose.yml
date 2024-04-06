@@ -43,4 +43,4 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: '/path/to/pgdata'
+      device: '/home/postgresdata/pgdata
