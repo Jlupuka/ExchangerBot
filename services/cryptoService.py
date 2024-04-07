@@ -4,7 +4,7 @@ from typing import Coroutine, Any, Type, Union
 
 import aiohttp
 
-from CastomExceptions.castomException import (
+from CustomExceptions.customException import (
     NotFoundCryptoToken,
     BadCryptoAddress,
 )
