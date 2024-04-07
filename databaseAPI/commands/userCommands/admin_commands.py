@@ -30,7 +30,7 @@ class AdminAPI(UserAPI):
         """
         async with get_session() as session:
             try:
-                return await UserAPI.update_user(user_id=user_id, Admin=True)
+                return await UserAPI.update_user(UserId=user_id, IsAdmin=True)
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 session.rollback()
