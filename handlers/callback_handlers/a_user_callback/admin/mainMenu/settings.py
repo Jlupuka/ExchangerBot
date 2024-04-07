@@ -29,7 +29,7 @@ async def settings_handler(
     if callback_data.page == "workType":
         admin_work_type: bool = (
             await AdminAPI.update_user(
-                user_id=callback.from_user.id, WorkType=not admin_work_type
+                user_id=callback.from_user.id, StatusWork=not admin_work_type
             )
         ).StatusWork
     count_wait_missions: int = len(

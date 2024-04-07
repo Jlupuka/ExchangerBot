@@ -48,5 +48,5 @@ class AdminAPI(UserAPI):
         """
         :return: Returns all admins with the  StatusWork=True
         """
-        admins: Sequence[Users] = await UserAPI.select_user(Admin=True, WorkType=True)
+        admins: Sequence[Users] = await UserAPI.select_user(IsAdmin=True, StatusWork=True)
         return admins if admins else 0
