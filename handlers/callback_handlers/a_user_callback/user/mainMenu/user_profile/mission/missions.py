@@ -96,8 +96,10 @@ async def accepted_missions_handler(
 async def information_mission(
     callback: CallbackQuery, callback_data: MissionCallbackFactory
 ) -> None:
-    mission_obj, wallet_obj = await SubmissionsAPI.select_missions(
-        False, None, 0, *(Submissions, Wallets), Id=callback_data.mission_id
+    mission_obj, wallet_obj = (
+        await SubmissionsAPI.select_missions(
+            False, None, 0, *(Submissions, Wallets), Id=callback_data.mission_id
+        )
     )[0]
     delete_mission = (
         {f"delete-{mission_obj.Id}": revokeButton["revoke"]}
