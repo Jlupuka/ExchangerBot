@@ -25,7 +25,7 @@ services:
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - .postgres:/var/lib/postgres/data
     restart: "unless-stopped"
 
   pgadmin:
@@ -36,7 +36,3 @@ services:
       PGADMIN_DEFAULT_PASSWORD: root
     ports:
       - "5000:80"
-
-volumes:
-  pgdata:
-
