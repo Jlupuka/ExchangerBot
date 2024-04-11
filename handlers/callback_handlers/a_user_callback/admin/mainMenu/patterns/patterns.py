@@ -110,10 +110,10 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> None:
 async def verification_delete(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
 ) -> None:
-    await state.update_data(patterns=callback_data.page.replace("pattern-", ""))
+    await state.update_data(patterns=(token := callback_data.page.replace("pattern-", "")))
     await callback.message.edit_text(
         text=botMessages["verificationDeletePattern"].format(
-            pattern=callback_data.page
+            pattern=token
         ),
         reply_markup=await Factories.create_fac_menu(
             AdminCallbackFactory, back="editPatterns", **yesLexicon
