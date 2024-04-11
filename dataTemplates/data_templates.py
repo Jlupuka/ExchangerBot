@@ -27,5 +27,5 @@ class WalletTRX:
 
 
 class TypeCheckToken(enum.Enum):
-    wallet: "wallet"
-    pattern: "pattern"
+    wallet = "wallet"
+    pattern = "pattern"
