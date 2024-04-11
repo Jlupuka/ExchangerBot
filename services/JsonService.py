@@ -84,7 +84,7 @@ class JsonService:
         :return: (dict[patterns.key:patterns.key.upper()])
         """
         patterns = await JsonService.get_specific_data("patterns")
-        return {key: key.upper() for key in patterns.keys()}
+        return {f"pattern-{key}": key.upper() for key in patterns.keys()}
 
     @staticmethod
     async def preprocess_patterns_for_text() -> str:

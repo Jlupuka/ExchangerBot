@@ -83,7 +83,7 @@ class IsToken(BaseFilter):
     def __init__(
         self,
         factory: Type[Union[AdminCallbackFactory, UserCallbackFactory]],
-        type_check: TypeCheckToken = None
+        type_check: TypeCheckToken = None,
     ) -> None:
         self.type_check = type_check
         self.factory = factory
@@ -99,10 +99,11 @@ class IsToken(BaseFilter):
         :param state: (aiogram.fsm.context.FSMContext)
         :return: (bool) Result to exist or not
         """
-        token = self.factory.unpack(callback.data).page
-        print(state, self.type_check)
+        token: str = self.factory.unpack(callback.data).page
         if self.type_check == TypeCheckToken.pattern:
-            return token in (await JsonService.get_specific_data("patterns"))
+            return token.replace("pattern-", "") in (
+                await JsonService.get_specific_data("patterns")
+            )
         token_in_base = set(await WalletAPI.select_wallets(Wallets.NameNet))
         result = token.upper() in token_in_base
         return result
