@@ -75,18 +75,18 @@ class WalletAPI:
                 await session.rollback()
 
     @staticmethod
-    async def delete_wallet(wallet_id: int) -> None:
+    async def delete_wallet(wallet_id: int) -> bool:
         """
         Deletes a wallet by its ID
         :param wallet_id: (int)
-        :return:
+        :return: True if successfully deleted else False
         """
         async with get_session() as session:
             sql: Delete = delete(Wallets).where(Wallets.Id == wallet_id)
             try:
                 await session.execute(sql)
                 await session.commit()
-                return None
+                return True
             except IntegrityError as IE:
                 logger.error(f"Indentation error in function '{__name__}': {IE}")
                 await session.rollback()
