@@ -12,7 +12,7 @@ from lexicon.lexicon import botMessages, startCallbackAdmin
 router: Router = Router()
 
 
-@router.message(Command(commands=["start"]), IsAdmin())
+@router.message(Command(commands=["start", "help"]), IsAdmin())
 async def start_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
