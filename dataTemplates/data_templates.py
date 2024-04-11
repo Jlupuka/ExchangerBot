@@ -1,3 +1,4 @@
+import enum
 from dataclasses import dataclass
 from typing import Union
 
@@ -23,3 +24,8 @@ class WalletTRX:
     hex_address: str
     private_key: str
     public_key: str
+
+
+class TypeCheckToken(enum.Enum):
+    wallet: "wallet"
+    pattern: "pattern"

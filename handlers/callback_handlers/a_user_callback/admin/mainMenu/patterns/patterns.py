@@ -5,6 +5,8 @@ from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
+
+from dataTemplates.data_templates import TypeCheckToken
 from filters.filters import IsAdmin, IsToken
 from lexicon.lexicon import (
     botMessages,
@@ -101,7 +103,7 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(
     AdminCallbackFactory.filter(),
-    IsToken(AdminCallbackFactory, check_state=FSMEditPatterns.choice_pattern),
+    IsToken(AdminCallbackFactory, type_check=TypeCheckToken.pattern),
     IsAdmin(),
     StateFilter(FSMEditPatterns.choice_pattern),
 )

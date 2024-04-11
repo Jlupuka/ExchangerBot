@@ -4,7 +4,7 @@ from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from dataTemplates.data_templates import MnemonicData, SendData
+from dataTemplates.data_templates import MnemonicData, SendData, TypeCheckToken
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets
 from factories.factory import AdminCallbackFactory, UserCallbackFactory
@@ -83,9 +83,9 @@ class IsToken(BaseFilter):
     def __init__(
         self,
         factory: Type[Union[AdminCallbackFactory, UserCallbackFactory]],
-        check_state: Union[FSMContext, bool] = None,
+        type_check: TypeCheckToken = None
     ) -> None:
-        self.check_state = check_state
+        self.type_check = type_check
         self.factory = factory
 
     """
@@ -100,7 +100,7 @@ class IsToken(BaseFilter):
         :return: (bool) Result to exist or not
         """
         token = self.factory.unpack(callback.data).page
-        if self.check_state == await state.get_state():
+        if self.type_check == TypeCheckToken.pattern:
             return token in (await JsonService.get_specific_data("patterns"))
         token_in_base = set(await WalletAPI.select_wallets(Wallets.NameNet))
         result = token.upper() in token_in_base

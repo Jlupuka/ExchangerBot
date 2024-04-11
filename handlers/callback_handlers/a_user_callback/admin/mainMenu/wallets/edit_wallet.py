@@ -3,6 +3,8 @@ from aiogram import F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
+
+from dataTemplates.data_templates import TypeCheckToken
 from databaseAPI.commands.walletAddress_commands import WalletAPI
 from databaseAPI.models import Wallets
 from filters.filters import IsAdmin, IsToken
@@ -24,7 +26,7 @@ router: Router = Router()
 
 
 @router.callback_query(
-    AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory, check_state=False), IsAdmin()
+    AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory, type_check=TypeCheckToken.wallet), IsAdmin()
 )
 async def print_wallets(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext
