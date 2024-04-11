@@ -89,7 +89,7 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> None:
                 **patternsMenu_copy,
             ),
         )
-        await state.clear()
+        await state.set_state(FSMEditPatterns.choice_pattern)
     else:
         await callback.message.edit_text(
             text=errorLexicon["repeatPattern"],
