@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Union, Type
 
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
@@ -82,7 +82,7 @@ class CheckState(BaseFilter):
 class IsToken(BaseFilter):
     def __init__(
         self,
-        factory: Union[AdminCallbackFactory, UserCallbackFactory],
+        factory: Type[Union[AdminCallbackFactory, UserCallbackFactory]],
         check_state: FSMContext = None,
     ) -> None:
         self.check_state = check_state
