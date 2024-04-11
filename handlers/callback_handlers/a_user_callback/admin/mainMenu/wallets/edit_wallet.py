@@ -24,7 +24,7 @@ router: Router = Router()
 
 
 @router.callback_query(
-    AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory, check_state=None), IsAdmin()
+    AdminCallbackFactory.filter(), IsToken(AdminCallbackFactory, check_state=False), IsAdmin()
 )
 async def print_wallets(
     callback: CallbackQuery, callback_data: AdminCallbackFactory, state: FSMContext

@@ -83,7 +83,7 @@ class IsToken(BaseFilter):
     def __init__(
         self,
         factory: Type[Union[AdminCallbackFactory, UserCallbackFactory]],
-        check_state: FSMContext = None,
+        check_state: Union[FSMContext, bool] = None,
     ) -> None:
         self.check_state = check_state
         self.factory = factory
@@ -104,7 +104,7 @@ class IsToken(BaseFilter):
         result = token.upper() in token_in_base
         return (
             result
-            if not self.check_state
+            if self.check_state is None
             else result and self.check_state == await state.get_state()
         )
 
