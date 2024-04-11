@@ -1,4 +1,4 @@
-from typing import Any, Type, Union
+from typing import Any, Union
 
 from aiogram.filters import BaseFilter
 from aiogram.fsm.context import FSMContext
@@ -69,10 +69,9 @@ class CheckState(BaseFilter):
         """
         self.pattern = pattern
 
-    async def __call__(self, message: Message, state: FSMContext) -> bool:
+    async def __call__(self, state: FSMContext) -> bool:
         """
         Check if there is such an argument at the moment of the filter call
-        :param message: (aiogram.types.Message) User message
         :param state: (aiogram.fsm.context.FSMContext) State machine
         :return: (bool) Result to check if there is or not
         """
@@ -82,23 +81,32 @@ class CheckState(BaseFilter):
 
 class IsToken(BaseFilter):
     def __init__(
-        self, factory: Type[AdminCallbackFactory] | Type[UserCallbackFactory]
+        self,
+        factory: Union[AdminCallbackFactory, UserCallbackFactory],
+        check_state: FSMContext = None,
     ) -> None:
+        self.check_state = check_state
         self.factory = factory
 
     """
     Checks if such currency (its brief designation) exists in the database
     """
 
-    async def __call__(self, callback: CallbackQuery) -> bool:
+    async def __call__(self, callback: CallbackQuery, state: FSMContext) -> bool:
         """
         Checks if such currency (its brief designation) exists in the database
         :param callback: (aiogram.types.CallbackQuery)
+        :param state: (aiogram.fsm.context.FSMContext)
         :return: (bool) Result to exist or not
         """
         token = self.factory.unpack(callback.data).page
         token_in_base = set(await WalletAPI.select_wallets(Wallets.NameNet))
-        return token.upper() in token_in_base
+        result = token.upper() in token_in_base
+        return (
+            result
+            if not self.check_state
+            else result and self.check_state == await state.get_state()
+        )
 
 
 class IsDigit(BaseFilter):
@@ -139,10 +147,9 @@ class IsDigit(BaseFilter):
 
 
 class CheckSendFunds(BaseFilter):
-    async def __call__(self, callback: CallbackQuery, state: FSMContext) -> bool:
+    async def __call__(self, state: FSMContext) -> bool:
         """
         Filter for admin. Whether it is possible to send funds from a working wallet or not
-        :param callback: (CallbackQuery)
         :param state: (FSMContext)
         :return: (bool)
         """

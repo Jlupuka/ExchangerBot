@@ -98,7 +98,9 @@ class Wallets(Base):
     Status: Mapped[bool] = mapped_column(default=True)
     Percent: Mapped[float] = mapped_column(default=1.05)
     typeWallet: Mapped[TypesWallet]
-    MnemonicId: Mapped[Optional[int]] = mapped_column(ForeignKey("mnemonic.Id"))
+    MnemonicId: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("mnemonic.Id", ondelete="CASCADE")
+    )
 
     mnemonic: Mapped[Optional["MnemonicWallets"]] = relationship(
         back_populates="wallet", foreign_keys=[MnemonicId], cascade="all, delete"
@@ -109,7 +111,9 @@ class MnemonicWallets(Base):
     __tablename__ = "mnemonic"
 
     Id: Mapped[INTPKA]
-    WalletId: Mapped[int] = mapped_column(ForeignKey("wallets.Id"), unique=True)
+    WalletId: Mapped[int] = mapped_column(
+        ForeignKey("wallets.Id", ondelete="CASCADE"), unique=True
+    )
     EncryptMnemonic: Mapped[str]
 
     wallet: Mapped["Wallets"] = relationship(

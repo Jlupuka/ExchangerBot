@@ -100,7 +100,7 @@ async def patterns(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(
     AdminCallbackFactory.filter(),
-    IsToken(AdminCallbackFactory),
+    IsToken(AdminCallbackFactory, check_state=FSMEditPatterns.choice_pattern),
     IsAdmin(),
     StateFilter(FSMEditPatterns.choice_pattern),
 )
