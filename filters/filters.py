@@ -69,7 +69,7 @@ class CheckState(BaseFilter):
         """
         self.pattern = pattern
 
-    async def __call__(self, state: FSMContext) -> bool:
+    async def __call__(self, message: Message, state: FSMContext) -> bool:
         """
         Check if there is such an argument at the moment of the filter call
         :param state: (aiogram.fsm.context.FSMContext) State machine
@@ -100,6 +100,7 @@ class IsToken(BaseFilter):
         :return: (bool) Result to exist or not
         """
         token = self.factory.unpack(callback.data).page
+        print(state, self.type_check)
         if self.type_check == TypeCheckToken.pattern:
             return token in (await JsonService.get_specific_data("patterns"))
         token_in_base = set(await WalletAPI.select_wallets(Wallets.NameNet))
@@ -145,7 +146,7 @@ class IsDigit(BaseFilter):
 
 
 class CheckSendFunds(BaseFilter):
-    async def __call__(self, state: FSMContext) -> bool:
+    async def __call__(self, callback: CallbackQuery, state: FSMContext) -> bool:
         """
         Filter for admin. Whether it is possible to send funds from a working wallet or not
         :param state: (FSMContext)
