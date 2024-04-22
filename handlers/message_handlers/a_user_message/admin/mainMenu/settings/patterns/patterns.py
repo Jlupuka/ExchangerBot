@@ -17,7 +17,7 @@ router: Router = Router()
 @router.message(StateFilter(FSMEditPatterns.get_token_name), IsAdmin())
 async def get_token_name(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMEditPatterns.get_pattern)
-    await state.update_data(token=message.text)
+    await state.update_data(token=message.text.upper())
     await message.answer(
         text=botMessages["getPattern"].format(token=message.text),
         reply_markup=await Factories.create_fac_menu(
