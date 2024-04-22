@@ -58,7 +58,7 @@ async def create_mission_(
         type_trans: TypesTrans = TypesTrans[
             state_data["typeTransaction"].replace("-", "_").lower()
         ]
-        amount = (await crypto_api.balance) - 3
+        amount = (await crypto_api.balance)
         send_funds = await crypto_api.send_funds(
             to_address=main_wallet_address, amount=amount, memo=str(user.UserId)
         )
