@@ -21,11 +21,6 @@ class TrxAPI:
         """
 
         tx_data = {"to_address": to_address, "amount": int(amount * 10**6)}
-        (
-            await (
-                await self.client.get_contract(self.wallet["base58check_address"])
-            ).functions
-        )
         transaction = await (
             self.client.trx.transfer(
                 self.wallet["base58check_address"],
