@@ -18,4 +18,7 @@ class Client:
         Creates an AsyncTron client
         :return: (AsyncTron) AsyncTron client
         """
-        return AsyncTron(AsyncHTTPProvider(api_key=load_config().TronGridAPI.APIKEY))
+        return AsyncTron(
+            AsyncHTTPProvider(api_key=load_config().TronGridAPI.APIKEY),
+            conf={"fee_limit": 1 * 10**6},
+        )

@@ -50,7 +50,9 @@ async def create_mission_(
     amount_to: float = state_data["amount_to"]
     currency_to: str = state_data["currency_to"]
     amount_from: int = state_data["amount_from"]
-    if await crypto_api.check_payment(amount=amount_to):
+    if (
+        amount := (await crypto_api.balance) - 1
+    ) > 1 and await crypto_api.check_payment(amount=amount_to):
         wallet_requisites: str = state_data["user_requisites"]
         wallet_id: int = state_data["walletId"]
         main_wallet_address: str = state_data["mainWalletAddress"]
@@ -58,7 +60,6 @@ async def create_mission_(
         type_trans: TypesTrans = TypesTrans[
             state_data["typeTransaction"].replace("-", "_").lower()
         ]
-        amount = (await crypto_api.balance)
         send_funds = await crypto_api.send_funds(
             to_address=main_wallet_address, amount=amount, memo=str(user.UserId)
         )
