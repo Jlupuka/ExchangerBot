@@ -70,7 +70,7 @@ async def mission_data(
             ):
                 sendMission_copy = {**sendMission_copy, **sendFunds}
             file_path: str = await QRCodeService.create_crypto_payment_qrcode(
-                amount=mission_obj.AmountFrom,
+                amount=mission_obj.AmountTo,
                 crypto_currency=mission_obj.CurrencyTo,
                 address=mission_obj.AddressUser,
                 description=f"UserId-{user.UserId}",
