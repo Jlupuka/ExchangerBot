@@ -17,9 +17,9 @@ router: Router = Router()
 @router.message(StateFilter(FSMEditPatterns.get_token_name), IsAdmin())
 async def get_token_name(message: Message, state: FSMContext) -> None:
     await state.set_state(FSMEditPatterns.get_pattern)
-    await state.update_data(token=message.text.upper())
+    await state.update_data(token=message.text.lower())
     await message.answer(
-        text=botMessages["getPattern"].format(token=message.text),
+        text=botMessages["getPattern"].format(token=message.text.lower()),
         reply_markup=await Factories.create_fac_menu(
             AdminCallbackFactory,
             back="settings",

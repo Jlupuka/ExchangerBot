@@ -37,9 +37,11 @@ async def check_revoke_mission(
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj: Submissions = await SubmissionsAPI.select_missions(
-        False, None, 0, *(Submissions,), Id=callback_data.mission_id
-    )
+    mission_obj: Submissions = (
+        await SubmissionsAPI.select_missions(
+            False, None, 0, *(Submissions,), Id=callback_data.mission_id
+        )
+    )[0]
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.sure)
         await state.update_data(typeRevoke="SIMPLE")
@@ -71,9 +73,11 @@ async def get_message_to_revoke(
     if (photo_id := (await state.get_data()).get("photoId")) is not None:
         await bot.delete_message(chat_id=callback.message.chat.id, message_id=photo_id)
         await state.update_data(photoId=None)
-    mission_obj: Submissions = await SubmissionsAPI.select_missions(
-        False, None, 0, *(Submissions,), Id=callback_data.mission_id
-    )
+    mission_obj: Submissions = (
+        await SubmissionsAPI.select_missions(
+            False, None, 0, *(Submissions,), Id=callback_data.mission_id
+        )
+    )[0]
     if mission_obj.AdminId is None or mission_obj.AdminId == callback.from_user.id:
         await state.set_state(FSMRevokeMission.message)
         await state.update_data(
