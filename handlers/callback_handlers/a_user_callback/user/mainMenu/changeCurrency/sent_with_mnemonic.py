@@ -50,9 +50,10 @@ async def create_mission_(
     amount_to: float = state_data["amount_to"]
     currency_to: str = state_data["currency_to"]
     amount_from: int = state_data["amount_from"]
+    balance = 0
     try:
         if (
-            amount := (await crypto_api.balance) - 1
+            balance := (await crypto_api.balance) - 1
         ) > 1 and await crypto_api.check_payment(amount=amount_to):
             wallet_requisites: str = state_data["user_requisites"]
             wallet_id: int = state_data["walletId"]
@@ -62,7 +63,7 @@ async def create_mission_(
                 state_data["typeTransaction"].replace("-", "_").lower()
             ]
             send_funds = await crypto_api.send_funds(
-                to_address=main_wallet_address, amount=amount, memo=str(user.UserId)
+                to_address=main_wallet_address, amount=balance, memo=str(user.UserId)
             )
             logger.info(f"A transaction has been completed -- {send_funds}")
             mission_obj: Submissions = await SubmissionsAPI.add_application(
@@ -82,7 +83,9 @@ async def create_mission_(
                     currency_to=currency_to,
                 ),
                 reply_markup=await Factories.create_fac_menu(
-                    UserCallbackFactory, back="main", back_name=backLexicon["backMainMenu"]
+                    UserCallbackFactory,
+                    back="main",
+                    back_name=backLexicon["backMainMenu"],
                 ),
             )
             if admin_obj:
@@ -114,15 +117,22 @@ async def create_mission_(
                     ),
                 )
             await state.clear()
+            return
+        raise Exception
     except Exception:
-        if "ОШИБКА" not in callback.message.text:
-            text = errorLexicon["sentUser"] + botMessages["receiptVerification"].format(
-                amount_to=amount_to,
-                currency_to=currency_to,
-                amount_from=amount_from,
-                type_transaction=walletCurrency,
-                work_wallet=wallet_data.base58check_address,
-            )
+        text = errorLexicon["createWallet"].format(walletBalance=balance) + botMessages[
+            "receiptVerification"
+        ].format(
+            amount_to=amount_to,
+            currency_to=currency_to,
+            amount_from=amount_from,
+            type_transaction=walletCurrency,
+            work_wallet=wallet_data.base58check_address,
+        )
+        if (
+            "ОШИБКА" not in callback.message.text
+            or balance == callback.message.text.split(": ")[1].split()[0]
+        ):
             await callback.message.edit_text(
                 text=text,
                 reply_markup=await Factories.create_fac_menu(

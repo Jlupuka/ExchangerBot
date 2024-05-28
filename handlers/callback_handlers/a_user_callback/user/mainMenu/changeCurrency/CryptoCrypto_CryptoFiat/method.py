@@ -41,8 +41,10 @@ router: Router = Router()
     StateFilter(
         FSMCryptoFiat.method,
         FSMCryptoFiat.check_validate_sum,
+        FSMCryptoFiat.check_validate_mnemonic_sum,
         FSMCryptoCrypto.method,
         FSMCryptoCrypto.check_validate_sum,
+        FSMCryptoCrypto.check_validate_mnemonic_sum,
     ),
 )
 async def method_CC_CF(
